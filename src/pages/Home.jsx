@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
+import { Zap, Compass, Lock, Film as FilmIcon, Trophy } from "lucide-react";
 import "./Home.css";
 
 export default function Home() {
@@ -324,7 +325,7 @@ export default function Home() {
           <h2>Why CineCrick</h2>
           <div className="cc-proGrid">
             <div className="pro">
-              <div className="proIcon">⚡</div>
+              <div className="proIcon"><Zap size={28} aria-hidden="true" /></div>
               <div>
                 <h3>Fast booking</h3>
                 <p>Quick flow from selection to confirmation.</p>
@@ -332,7 +333,7 @@ export default function Home() {
             </div>
 
             <div className="pro">
-              <div className="proIcon">🧭</div>
+              <div className="proIcon"><Compass size={28} aria-hidden="true" /></div>
               <div>
                 <h3>Smart navigation</h3>
                 <p>Dropdown menus with search + scrollable options.</p>
@@ -340,7 +341,7 @@ export default function Home() {
             </div>
 
             <div className="pro">
-              <div className="proIcon">🔒</div>
+              <div className="proIcon"><Lock size={28} aria-hidden="true" /></div>
               <div>
                 <h3>Protected pages</h3>
                 <p>Home is accessible only after registration.</p>
@@ -348,7 +349,7 @@ export default function Home() {
             </div>
 
             <div className="pro">
-              <div className="proIcon">🎬</div>
+              <div className="proIcon"><FilmIcon size={28} aria-hidden="true" /></div>
               <div>
                 <h3>Entertainment hub</h3>
                 <p>Movies + cricket + events in one dashboard.</p>
@@ -365,7 +366,7 @@ export default function Home() {
           <div className="cc-footer-col">
             <h2 className="cc-footer-brand">CineCrick</h2>
             <p>
-              Your one-stop destination for movies 🎬, cricket 🏏, events,
+              Your one-stop destination for movies <FilmIcon size={14} aria-hidden="true" />, cricket <Trophy size={14} aria-hidden="true" />, events,
               bookings, and entertainment.
             </p>
           </div>

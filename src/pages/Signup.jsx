@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { Film, Trophy, Eye, EyeOff } from "lucide-react";
 import "./Signup.css";
 
 export default function Signup() {
@@ -47,7 +48,8 @@ export default function Signup() {
 
         <h2>Create Account</h2>
         <p className="subtitle">
-          Movies 🎬 + Cricket 🏏 in one place
+          Movies <Film size={16} style={{ verticalAlign: "text-bottom", margin: "0 6px" }} aria-hidden="true" />
+          + Cricket <Trophy size={16} style={{ verticalAlign: "text-bottom", margin: "0 6px" }} aria-hidden="true" /> in one place
         </p>
 
         <form onSubmit={handleSubmit}>
@@ -74,8 +76,10 @@ export default function Signup() {
             <span
               className="eye"
               onClick={() => setShowPwd(!showPwd)}
+              role="button"
+              aria-label={showPwd ? "Hide password" : "Show password"}
             >
-              {showPwd ? "🙈" : "👁️"}
+              {showPwd ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
             </span>
           </div>
 
