@@ -1,19 +1,28 @@
-import { useNavigate } from "react-router-dom";
 import { useState } from "react";
-import { Film, Trophy, Eye, EyeOff } from "lucide-react";
-import "./Signup.css";
+import { useNavigate } from "react-router-dom";
+import { Eye, EyeOff, Film, Trophy } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function Signup() {
   const navigate = useNavigate();
+  const [showPwd, setShowPwd] = useState(false);
 
   const [form, setForm] = useState({
     email: "",
     password: "",
     dob: "",
-    interest: ""
+    interest: "",
   });
-
-  const [showPwd, setShowPwd] = useState(false);
 
   function handleChange(e) {
     const { name, value } = e.target;
@@ -22,94 +31,152 @@ export default function Signup() {
 
   function handleSubmit(e) {
     e.preventDefault();
-
     if (!form.email || !form.password || !form.dob || !form.interest) {
       alert("Please fill all fields");
       return;
     }
-
-    // ✅ Save user
     localStorage.setItem("cinecrick_user", JSON.stringify(form));
-
-    // ✅ Redirect ONLY after signup
+    localStorage.setItem("cinecrick_logged_in", "true");
     navigate("/home");
   }
 
   return (
-    <div className="signup-page">
+    <div className="relative min-h-screen overflow-hidden text-white">
 
-      <div className="overlay" />
+      {/* LEFT IMAGE */}
+      <div className="absolute left-0 top-0 h-full w-1/2 hidden lg:block">
+        <div className="h-full w-full bg-[url('/cricket.jpg')] bg-cover bg-center scale-105 animate-[slowZoom_20s_linear_infinite]" />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/70 to-transparent" />
+      </div>
+
+      {/* RIGHT IMAGE */}
+      <div className="absolute right-0 top-0 h-full w-1/2 hidden lg:block">
+        <div className="h-full w-full bg-[url('/movies.jpg')] bg-cover bg-center scale-105 animate-[slowZoom_20s_linear_infinite]" />
+        <div className="absolute inset-0 bg-gradient-to-l from-black/70 to-transparent" />
+      </div>
+
+      {/* CENTER GRADIENT */}
+      <div className="absolute inset-0 bg-gradient-to-b from-[#0b1220]/90 via-[#0f172a]/95 to-[#0b1220]/95" />
 
       {/* LOGO */}
-      <h1 className="logo">CineCrick</h1>
+      <h1 className="relative z-20 pt-8 text-center text-5xl font-extrabold tracking-tight text-pink-500 drop-shadow-[0_0_20px_rgba(236,72,153,0.8)]">
+        CineCrick
+      </h1>
 
-      {/* CARD */}
-      <div className="signup-card">
+      {/* CENTER CARD */}
+      <div className="relative z-20 flex items-center justify-center px-4 py-12">
 
-        <h2>Create Account</h2>
-        <p className="subtitle">
-          Movies <Film size={16} style={{ verticalAlign: "text-bottom", margin: "0 6px" }} aria-hidden="true" />
-          + Cricket <Trophy size={16} style={{ verticalAlign: "text-bottom", margin: "0 6px" }} aria-hidden="true" /> in one place
-        </p>
+        <Card className="w-full max-w-md bg-black/70 backdrop-blur-2xl border border-white/10 shadow-[0_0_60px_rgba(0,0,0,0.9)] rounded-3xl animate-fadeUp">
 
-        <form onSubmit={handleSubmit}>
+          <CardContent className="p-8 space-y-6">
 
-          <div className="input-group">
-            <input
-              name="email"
-              type="email"
-              required
-              onChange={handleChange}
-            />
-            <label>Email Address</label>
-          </div>
+            <div>
+              <h2 className="text-2xl font-bold mb-1">Create Account</h2>
+              <p className="text-sm text-white/60">
+                Movies <Film size={14} className="inline mx-1" />
+                + Cricket <Trophy size={14} className="inline mx-1" /> in one place
+              </p>
+            </div>
 
-          <div className="input-group">
-            <input
-              name="password"
-              type={showPwd ? "text" : "password"}
-              required
-              onChange={handleChange}
-            />
-            <label>Password</label>
+            <form onSubmit={handleSubmit} className="space-y-5">
 
-            <span
-              className="eye"
-              onClick={() => setShowPwd(!showPwd)}
-              role="button"
-              aria-label={showPwd ? "Hide password" : "Show password"}
-            >
-              {showPwd ? <EyeOff size={18} aria-hidden="true" /> : <Eye size={18} aria-hidden="true" />}
-            </span>
-          </div>
+              <Input
+                name="email"
+                type="email"
+                placeholder="Email Address"
+                onChange={handleChange}
+                className="bg-black/40 border-white/10 focus-visible:ring-pink-500/40"
+              />
 
-          <div className="input-group">
-            <input
-              name="dob"
-              type="date"
-              required
-              onChange={handleChange}
-            />
-            <label className="date-label">Date of Birth</label>
-          </div>
+              <div className="relative">
+                <Input
+                  name="password"
+                  type={showPwd ? "text" : "password"}
+                  placeholder="Password"
+                  onChange={handleChange}
+                  className="bg-black/40 border-white/10 pr-10 focus-visible:ring-pink-500/40"
+                />
 
-          <div className="input-group">
-            <select name="interest" required onChange={handleChange}>
-              <option value=""></option>
-              <option>Cricket</option>
-              <option>Movies</option>
-              <option>Both</option>
-            </select>
-            <label>Select Interest</label>
-          </div>
+                <button
+                  type="button"
+                  onClick={() => setShowPwd(!showPwd)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/60 hover:text-white transition"
+                >
+                  {showPwd ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
 
-          <button className="signup-btn">
-            Get Started →
-          </button>
+              <Input
+                type="date"
+                name="dob"
+                onChange={handleChange}
+                className="bg-black/40 border-white/10 focus-visible:ring-pink-500/40"
+              />
 
-        </form>
+              <Select
+                onValueChange={(value) =>
+                  setForm((p) => ({ ...p, interest: value }))
+                }
+              >
+                <SelectTrigger className="bg-black/40 border-white/10 focus:ring-pink-500/40">
+                  <SelectValue placeholder="Select Interest" />
+                </SelectTrigger>
 
+                <SelectContent className="bg-black/95 backdrop-blur-xl border border-white/10 text-white rounded-xl shadow-2xl">
+                  <SelectItem value="Cricket" className="focus:bg-pink-500 focus:text-white">
+                    Cricket
+                  </SelectItem>
+                  <SelectItem value="Movies" className="focus:bg-pink-500 focus:text-white">
+                    Movies
+                  </SelectItem>
+                  <SelectItem value="Both" className="focus:bg-pink-500 focus:text-white">
+                    Both
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Button className="w-full h-11 bg-gradient-to-r from-pink-500 to-rose-400 font-semibold hover:scale-[1.02] transition-all duration-300 shadow-lg">
+                Get Started →
+              </Button>
+              <p className="text-sm text-white/70 text-center mt-4">
+  Already have an account?{" "}
+  <Link
+    to="/"
+    className="text-pink-400 hover:text-pink-300 font-semibold transition"
+  >
+    Login
+  </Link>
+</p>
+
+              <p className="text-center text-xs text-white/50">
+                By signing up, you agree to CineCrick Terms & Privacy Policy.
+              </p>
+
+            </form>
+          </CardContent>
+        </Card>
       </div>
+
+      {/* ANIMATIONS */}
+      <style>
+        {`
+          @keyframes slowZoom {
+            0% { transform: scale(1.05); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1.05); }
+          }
+
+          @keyframes fadeUp {
+            0% { opacity: 0; transform: translateY(30px); }
+            100% { opacity: 1; transform: translateY(0); }
+          }
+
+          .animate-fadeUp {
+            animation: fadeUp 0.8s ease forwards;
+          }
+        `}
+      </style>
+
     </div>
   );
 }
