@@ -2,13 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Eye, EyeOff, LogIn, KeyRound, Mail } from "lucide-react";
 
+import { api, setToken, getToken } from "../lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-// If you already have shadcn Dialog installed, use it.
-// If not installed, run: npx shadcn@latest add dialog
 import {
   Dialog,
   DialogContent,
@@ -18,8 +17,6 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 
-// If you already have shadcn Checkbox installed, use it.
-// If not installed, run: npx shadcn@latest add checkbox
 import { Checkbox } from "@/components/ui/checkbox";
 
 export default function Login() {
@@ -30,7 +27,7 @@ export default function Login() {
 
   const [form, setForm] = useState({ email: "", password: "" });
 
-  // Forgot password UI
+  // Forgot password UI (demo)
   const [openForgot, setOpenForgot] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
   const [forgotMsg, setForgotMsg] = useState("");
@@ -38,7 +35,8 @@ export default function Login() {
   // ---- Load remembered email + remember flag ----
   useEffect(() => {
     const remembered = localStorage.getItem("cinecrick_remember") === "true";
-    const rememberedEmail = localStorage.getItem("cinecrick_remember_email") || "";
+    const rememberedEmail =
+      localStorage.getItem("cinecrick_remember_email") || "";
 
     if (remembered) {
       setRemember(true);
@@ -46,23 +44,14 @@ export default function Login() {
     }
   }, []);
 
-  // ---- If already logged in, go home ----
+  // ---- If already logged in (token exists), go home ----
   useEffect(() => {
-    const loggedIn = localStorage.getItem("cinecrick_logged_in") === "true";
-    const userStr = localStorage.getItem("cinecrick_user");
-    if (loggedIn && userStr) navigate("/home", { replace: true });
+    const token = getToken();
+    if (token) navigate("/home", { replace: true });
   }, [navigate]);
 
-  // ---- Saved user hint for forgot password dialog ----
   const savedEmailHint = useMemo(() => {
-    const savedStr = localStorage.getItem("cinecrick_user");
-    if (!savedStr) return "";
-    try {
-      const saved = JSON.parse(savedStr);
-      return saved?.email ? String(saved.email) : "";
-    } catch {
-      return "";
-    }
+    return localStorage.getItem("cinecrick_remember_email") || "";
   }, [openForgot]);
 
   function handleChange(e) {
@@ -76,45 +65,37 @@ export default function Login() {
     else localStorage.removeItem("cinecrick_remember_email");
   }
 
- function handleSubmit(e) {
-  e.preventDefault();
+  // ✅ REAL LOGIN (Rails API)
+  async function handleSubmit(e) {
+    e.preventDefault();
 
-  const savedStr = localStorage.getItem("cinecrick_user");
+    const email = form.email.trim();
+    const password = form.password;
 
-  if (!savedStr) {
-    alert("No account found. Please signup first.");
-    navigate("/signup");
-    return;
+    if (!email || !password) {
+      alert("Please enter email and password.");
+      return;
+    }
+
+    try {
+      const data = await api("/auth/login", {
+        method: "POST",
+        body: { email, password },
+      });
+
+      // ✅ store token + user (important)
+      setToken(data.token);
+      localStorage.setItem("cinecrick_user", JSON.stringify(data.user));
+      localStorage.setItem("cinecrick_logged_in", "true");
+
+      // remember me
+      persistRemember(remember, email);
+
+      navigate("/home", { replace: true });
+    } catch (err) {
+      alert(err?.message || "Login failed");
+    }
   }
-
-  let saved;
-
-  try {
-    saved = JSON.parse(savedStr);
-  } catch {
-    alert("Saved user data corrupted. Please signup again.");
-    localStorage.removeItem("cinecrick_user");
-    return;
-  }
-
-  const inputEmail = form.email.trim().toLowerCase();
-  const savedEmail = saved.email.trim().toLowerCase();
-
-  if (inputEmail !== savedEmail) {
-    alert("Email does not match the registered email.");
-    return;
-  }
-
-  if (form.password !== saved.password) {
-    alert("Incorrect password.");
-    return;
-  }
-
-  // login success
-  localStorage.setItem("cinecrick_logged_in", "true");
-
-  navigate("/home");
-}
 
   function openForgotDialog() {
     setForgotMsg("");
@@ -122,6 +103,7 @@ export default function Login() {
     setOpenForgot(true);
   }
 
+  // Demo only (real reset needs backend email service)
   function handleForgotSend() {
     const email = forgotEmail.trim();
     if (!email) {
@@ -129,27 +111,6 @@ export default function Login() {
       return;
     }
 
-    // Demo behavior: check if it matches saved user
-    const savedStr = localStorage.getItem("cinecrick_user");
-    if (!savedStr) {
-      setForgotMsg("No user found. Please signup first.");
-      return;
-    }
-
-    let saved;
-    try {
-      saved = JSON.parse(savedStr);
-    } catch {
-      setForgotMsg("Saved data corrupted. Please signup again.");
-      return;
-    }
-
-    if (email.toLowerCase() !== String(saved.email).toLowerCase()) {
-      setForgotMsg("This email is not registered in this browser.");
-      return;
-    }
-
-    // ✅ Demo: show message (real apps send an email)
     setForgotMsg(
       "Reset link sent (demo). In real apps, an email will be sent to your inbox."
     );
@@ -267,7 +228,7 @@ export default function Login() {
               Forgot password
             </DialogTitle>
             <DialogDescription className="text-white/65">
-              This is a demo. We’ll verify email locally and show a reset message.
+              Demo only. Real reset needs backend email service.
             </DialogDescription>
           </DialogHeader>
 
@@ -282,12 +243,14 @@ export default function Login() {
 
             {savedEmailHint ? (
               <p className="text-xs text-white/55">
-                Hint: saved email in this browser is{" "}
-                <span className="text-white/80 font-semibold">{savedEmailHint}</span>
+                Hint: remembered email is{" "}
+                <span className="text-white/80 font-semibold">
+                  {savedEmailHint}
+                </span>
               </p>
             ) : (
               <p className="text-xs text-white/55">
-                No saved user found in this browser yet.
+                No remembered email found yet.
               </p>
             )}
 

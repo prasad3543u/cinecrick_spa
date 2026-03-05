@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
+import { api, clearToken, getToken } from "../lib/api";
 import {
   Zap,
   Compass,
@@ -41,21 +42,37 @@ import {
 export default function Home() {
   const navigate = useNavigate();
 
-  // ✅ Protected route
-  const userStr = localStorage.getItem("cinecrick_user");
-  let user = null;
+  // ✅ Token check (basic)
+  const token = getToken();
+  if (!token) return <Navigate to="/" replace />;
 
-  try {
-    user = userStr ? JSON.parse(userStr) : null;
-  } catch {
-    localStorage.removeItem("cinecrick_user");
-    return <Navigate to="/" replace />;
-  }
+  // ✅ Real user from backend (/me)
+  const [user, setUser] = useState(null);
+  const [loadingUser, setLoadingUser] = useState(true);
 
-  if (!user) return <Navigate to="/" replace />;
+  useEffect(() => {
+    let mounted = true;
+
+    (async () => {
+      try {
+        const data = await api("/me", { auth: true });
+        if (mounted) setUser(data.user);
+      } catch (e) {
+        // token invalid/expired -> logout
+        clearToken();
+        navigate("/", { replace: true });
+      } finally {
+        if (mounted) setLoadingUser(false);
+      }
+    })();
+
+    return () => {
+      mounted = false;
+    };
+  }, [navigate]);
 
   function logout() {
-    localStorage.removeItem("cinecrick_logged_in");
+    clearToken();
     navigate("/", { replace: true });
   }
 
@@ -158,6 +175,17 @@ export default function Home() {
     const t = setInterval(() => setSlide((s) => (s + 1) % slides.length), 3500);
     return () => clearInterval(t);
   }, [slides.length]);
+
+  // ✅ Loading state while calling /me
+  if (loadingUser) {
+    return (
+      <div className="min-h-screen bg-[#070812] text-white flex items-center justify-center">
+        <div className="text-white/70">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!user) return <Navigate to="/" replace />;
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#070812] text-white">
@@ -313,30 +341,52 @@ export default function Home() {
       {/* ===== BELOW SLIDESHOW (FULL WIDTH) ===== */}
       <section className="w-full px-6 lg:px-14 py-6">
         <div className="grid gap-4 lg:grid-cols-2">
+          
           <DarkCard title="About CineCrick">
-            <p className="text-white/80 leading-relaxed">
-              CineCrick is a single place for <b>movies</b>, <b>cricket</b>, and{" "}
-              <b>events</b>. Discover trending content, check schedules, and manage
-              bookings with a premium experience.
-            </p>
+  <p className="text-white/80 leading-relaxed">
+    CineCrick is a single place for <b>movies</b>, <b>cricket</b>, and{" "}
+    <b>events</b>. Discover trending content, check schedules, and manage
+    bookings with a premium experience.
+  </p>
 
-            <Separator className="my-5 bg-white/10" />
+  {/* 👇 ADD THIS BLOCK */}
+ <div className="mt-4 text-sm text-white">
+  <p><span className="font-semibold">Email:</span> {user.email}</p>
+  <p><span className="font-semibold">DOB:</span> {user.dob}</p>
+  <p><span className="font-semibold">Interest:</span> {user.interest}</p>
+</div>
+  <Separator className="my-5 bg-white/10" />
 
-            <div className="flex items-center gap-2 text-white/70 text-sm">
-              <FilmIcon className="h-4 w-4" /> Movies
-              <span className="mx-1">•</span>
-              <Trophy className="h-4 w-4" /> Cricket
-              <span className="mx-1">•</span>
-              <Zap className="h-4 w-4" /> Offers
-            </div>
-          </DarkCard>
-
+  <div className="flex items-center gap-2 text-white/70 text-sm">
+    <FilmIcon className="h-4 w-4" /> Movies
+    <span className="mx-1">•</span>
+    <Trophy className="h-4 w-4" /> Cricket
+    <span className="mx-1">•</span>
+    <Zap className="h-4 w-4" /> Offers
+  </div>
+</DarkCard>
           <DarkCard title="Why CineCrick">
             <div className="mt-2 grid gap-3 sm:grid-cols-2">
-              <Pro icon={<Zap className="h-6 w-6" />} title="Fast booking" desc="Quick flow from selection to confirmation." />
-              <Pro icon={<Compass className="h-6 w-6" />} title="Smart navigation" desc="Dropdown menus with search + scrollable options." />
-              <Pro icon={<Lock className="h-6 w-6" />} title="Protected pages" desc="Home opens only after signup." />
-              <Pro icon={<FilmIcon className="h-6 w-6" />} title="Entertainment hub" desc="Movies + cricket + events in one dashboard." />
+              <Pro
+                icon={<Zap className="h-6 w-6" />}
+                title="Fast booking"
+                desc="Quick flow from selection to confirmation."
+              />
+              <Pro
+                icon={<Compass className="h-6 w-6" />}
+                title="Smart navigation"
+                desc="Dropdown menus with search + scrollable options."
+              />
+              <Pro
+                icon={<Lock className="h-6 w-6" />}
+                title="Protected pages"
+                desc="Home opens only after signup."
+              />
+              <Pro
+                icon={<FilmIcon className="h-6 w-6" />}
+                title="Entertainment hub"
+                desc="Movies + cricket + events in one dashboard."
+              />
             </div>
           </DarkCard>
         </div>
@@ -352,9 +402,29 @@ export default function Home() {
             </p>
           </div>
 
-          <FooterCol title="Quick Links" items={["Home", "Movies", "Cricket", "Bookings", "News"]} />
-          <FooterCol title="Services" items={["Movie Tickets", "Ground Booking", "Live Scores", "Event Booking", "Offers"]} />
-          <FooterCol title="Support" items={["Help Center", "Privacy Policy", "Terms", "Contact Us"]} />
+          <FooterCol
+            title="Quick Links"
+            items={["Home", "Movies", "Cricket", "Bookings", "News"]}
+          />
+          <FooterCol
+            title="Services"
+            items={[
+              "Movie Tickets",
+              "Ground Booking",
+              "Live Scores",
+              "Event Booking",
+              "Offers",
+            ]}
+          />
+          <FooterCol
+            title="Support"
+            items={[
+              "Help Center",
+              "Privacy Policy",
+              "Terms",
+              "Contact Us",
+            ]}
+          />
         </div>
 
         <div className="border-t border-white/10 py-4 text-center text-xs text-white/55">
@@ -370,7 +440,9 @@ function MenuDropdown({ label, items, onPick }) {
 
   return (
     <DropdownMenu
-      onOpenChange={(open) => open && setTimeout(() => inputRef.current?.focus(), 0)}
+      onOpenChange={(open) =>
+        open && setTimeout(() => inputRef.current?.focus(), 0)
+      }
     >
       <DropdownMenuTrigger asChild>
         <Button className="rounded-xl border border-white/10 bg-white/5 text-white hover:bg-white/10">

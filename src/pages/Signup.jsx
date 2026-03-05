@@ -13,6 +13,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+import { api, setToken } from "../lib/api";
+
 export default function Signup() {
   const navigate = useNavigate();
   const [showPwd, setShowPwd] = useState(false);
@@ -29,20 +31,49 @@ export default function Signup() {
     setForm((p) => ({ ...p, [name]: value }));
   }
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
+
     if (!form.email || !form.password || !form.dob || !form.interest) {
       alert("Please fill all fields");
       return;
     }
-    localStorage.setItem("cinecrick_user", JSON.stringify(form));
-    localStorage.setItem("cinecrick_logged_in", "true");
-    navigate("/home");
+
+    const email = form.email.trim();
+    const password = form.password;
+
+    // name from email (until you add name input)
+    const name = email.includes("@") ? email.split("@")[0] : email;
+
+    try {
+      const data = await api("/auth/signup", {
+        method: "POST",
+        body: {
+          name,
+          email,
+          password,
+          password_confirmation: password,
+          dob: form.dob,
+          interest: form.interest,
+        },
+      });
+
+      // ✅ Save token + user (important)
+      setToken(data.token);
+      localStorage.setItem("cinecrick_user", JSON.stringify(data.user));
+      localStorage.setItem("cinecrick_logged_in", "true");
+
+      // optional (not needed if API returns user with dob/interest)
+      // localStorage.setItem("cinecrick_profile", JSON.stringify({ dob: form.dob, interest: form.interest }));
+
+      navigate("/home", { replace: true });
+    } catch (err) {
+      alert(err.message || "Signup failed");
+    }
   }
 
   return (
     <div className="relative min-h-screen overflow-hidden text-white">
-
       {/* LEFT IMAGE */}
       <div className="absolute left-0 top-0 h-full w-1/2 hidden lg:block">
         <div className="h-full w-full bg-[url('/cricket.jpg')] bg-cover bg-center scale-105 animate-[slowZoom_20s_linear_infinite]" />
@@ -65,11 +96,8 @@ export default function Signup() {
 
       {/* CENTER CARD */}
       <div className="relative z-20 flex items-center justify-center px-4 py-12">
-
         <Card className="w-full max-w-md bg-black/70 backdrop-blur-2xl border border-white/10 shadow-[0_0_60px_rgba(0,0,0,0.9)] rounded-3xl animate-fadeUp">
-
           <CardContent className="p-8 space-y-6">
-
             <div>
               <h2 className="text-2xl font-bold mb-1">Create Account</h2>
               <p className="text-sm text-white/60">
@@ -79,13 +107,14 @@ export default function Signup() {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-5">
-
               <Input
                 name="email"
                 type="email"
                 placeholder="Email Address"
                 onChange={handleChange}
+                value={form.email}
                 className="bg-black/40 border-white/10 focus-visible:ring-pink-500/40"
+                required
               />
 
               <div className="relative">
@@ -94,7 +123,9 @@ export default function Signup() {
                   type={showPwd ? "text" : "password"}
                   placeholder="Password"
                   onChange={handleChange}
+                  value={form.password}
                   className="bg-black/40 border-white/10 pr-10 focus-visible:ring-pink-500/40"
+                  required
                 />
 
                 <button
@@ -110,10 +141,13 @@ export default function Signup() {
                 type="date"
                 name="dob"
                 onChange={handleChange}
+                value={form.dob}
                 className="bg-black/40 border-white/10 focus-visible:ring-pink-500/40"
+                required
               />
 
               <Select
+                value={form.interest}
                 onValueChange={(value) =>
                   setForm((p) => ({ ...p, interest: value }))
                 }
@@ -138,20 +172,20 @@ export default function Signup() {
               <Button className="w-full h-11 bg-gradient-to-r from-pink-500 to-rose-400 font-semibold hover:scale-[1.02] transition-all duration-300 shadow-lg">
                 Get Started →
               </Button>
+
               <p className="text-sm text-white/70 text-center mt-4">
-  Already have an account?{" "}
-  <Link
-    to="/"
-    className="text-pink-400 hover:text-pink-300 font-semibold transition"
-  >
-    Login
-  </Link>
-</p>
+                Already have an account?{" "}
+                <Link
+                  to="/"
+                  className="text-pink-400 hover:text-pink-300 font-semibold transition"
+                >
+                  Login
+                </Link>
+              </p>
 
               <p className="text-center text-xs text-white/50">
                 By signing up, you agree to CineCrick Terms & Privacy Policy.
               </p>
-
             </form>
           </CardContent>
         </Card>
@@ -165,18 +199,15 @@ export default function Signup() {
             50% { transform: scale(1.1); }
             100% { transform: scale(1.05); }
           }
-
           @keyframes fadeUp {
             0% { opacity: 0; transform: translateY(30px); }
             100% { opacity: 1; transform: translateY(0); }
           }
-
           .animate-fadeUp {
             animation: fadeUp 0.8s ease forwards;
           }
         `}
       </style>
-
     </div>
   );
 }
