@@ -51,25 +51,36 @@ export default function Home() {
   const [loadingUser, setLoadingUser] = useState(true);
 
   useEffect(() => {
-    let mounted = true;
+  let mounted = true;
 
-    (async () => {
-      try {
-        const data = await api("/me", { auth: true });
-        if (mounted) setUser(data.user);
-      } catch (e) {
-        // token invalid/expired -> logout
-        clearToken();
-        navigate("/", { replace: true });
-      } finally {
-        if (mounted) setLoadingUser(false);
+  async function loadUser(retryCount = 0) {
+    try {
+      const data = await api("/me", { auth: true });
+      if (mounted) {
+        setUser(data.user);
+        setLoadingUser(false);
       }
-    })();
+    } catch (e) {
+      if (retryCount < 3) {
+        setTimeout(() => {
+          loadUser(retryCount + 1);
+        }, 3000);
+      } else {
+        if (mounted) {
+          clearToken();
+          setLoadingUser(false);
+          navigate("/", { replace: true });
+        }
+      }
+    }
+  }
 
-    return () => {
-      mounted = false;
-    };
-  }, [navigate]);
+  loadUser();
+
+  return () => {
+    mounted = false;
+  };
+}, [navigate]);
 
   function logout() {
     clearToken();
@@ -178,12 +189,12 @@ export default function Home() {
 
   // ✅ Loading state while calling /me
   if (loadingUser) {
-    return (
-      <div className="min-h-screen bg-[#070812] text-white flex items-center justify-center">
-        <div className="text-white/70">Loading...</div>
-      </div>
-    );
-  }
+  return (
+    <div className="min-h-screen bg-[#070812] text-white flex items-center justify-center">
+      <div className="text-white/70">Waking server... please wait</div>
+    </div>
+  );
+}
 
   if (!user) return <Navigate to="/" replace />;
 
