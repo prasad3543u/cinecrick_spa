@@ -42,7 +42,7 @@ import {
 export default function Home() {
   const navigate = useNavigate();
 
-  // ✅ Token check (basic)
+  // ✅ Token check
   const token = getToken();
   if (!token) return <Navigate to="/" replace />;
 
@@ -51,36 +51,37 @@ export default function Home() {
   const [loadingUser, setLoadingUser] = useState(true);
 
   useEffect(() => {
-  let mounted = true;
+    let cancelled = false;
 
-  async function loadUser(retryCount = 0) {
-    try {
-      const data = await api("/me", { auth: true });
-      if (mounted) {
-        setUser(data.user);
-        setLoadingUser(false);
-      }
-    } catch (e) {
-      if (retryCount < 3) {
-        setTimeout(() => {
-          loadUser(retryCount + 1);
-        }, 3000);
-      } else {
-        if (mounted) {
+    async function loadUser(retry = 0) {
+      try {
+        const data = await api("/me", { auth: true });
+
+        if (!cancelled) {
+          setUser(data.user);
+          setLoadingUser(false);
+        }
+      } catch (err) {
+        // Retry because Render free server may be waking up
+        if (retry < 3 && !cancelled) {
+          setTimeout(() => loadUser(retry + 1), 3000);
+          return;
+        }
+
+        if (!cancelled) {
           clearToken();
           setLoadingUser(false);
           navigate("/", { replace: true });
         }
       }
     }
-  }
 
-  loadUser();
+    loadUser();
 
-  return () => {
-    mounted = false;
-  };
-}, [navigate]);
+    return () => {
+      cancelled = true;
+    };
+  }, [navigate]);
 
   function logout() {
     clearToken();
@@ -189,12 +190,12 @@ export default function Home() {
 
   // ✅ Loading state while calling /me
   if (loadingUser) {
-  return (
-    <div className="min-h-screen bg-[#070812] text-white flex items-center justify-center">
-      <div className="text-white/70">Waking server... please wait</div>
-    </div>
-  );
-}
+    return (
+      <div className="min-h-screen bg-[#070812] text-white flex items-center justify-center">
+        <div className="text-white/70">Waking server... please wait</div>
+      </div>
+    );
+  }
 
   if (!user) return <Navigate to="/" replace />;
 
@@ -235,7 +236,7 @@ export default function Home() {
             <div className="flex items-center gap-3 rounded-full border border-white/10 bg-white/5 px-3 py-2">
               <span className="h-2.5 w-2.5 rounded-full bg-emerald-400 shadow-[0_0_0_6px_rgba(16,185,129,.14)]" />
               <span className="max-w-[38vw] truncate text-sm text-white/80">
-                {user.email}
+                {user.email || "—"}
               </span>
 
               <Avatar className="h-8 w-8">
@@ -352,30 +353,40 @@ export default function Home() {
       {/* ===== BELOW SLIDESHOW (FULL WIDTH) ===== */}
       <section className="w-full px-6 lg:px-14 py-6">
         <div className="grid gap-4 lg:grid-cols-2">
-          
           <DarkCard title="About CineCrick">
-  <p className="text-white/80 leading-relaxed">
-    CineCrick is a single place for <b>movies</b>, <b>cricket</b>, and{" "}
-    <b>events</b>. Discover trending content, check schedules, and manage
-    bookings with a premium experience.
-  </p>
+            <p className="text-white/80 leading-relaxed">
+              CineCrick is a single place for <b>movies</b>, <b>cricket</b>, and{" "}
+              <b>events</b>. Discover trending content, check schedules, and manage
+              bookings with a premium experience.
+            </p>
 
-  {/* 👇 ADD THIS BLOCK */}
- <div className="mt-4 text-sm text-white">
-  <p><span className="font-semibold">Email:</span> {user.email}</p>
-  <p><span className="font-semibold">DOB:</span> {user.dob}</p>
-  <p><span className="font-semibold">Interest:</span> {user.interest}</p>
-</div>
-  <Separator className="my-5 bg-white/10" />
+            {/* ✅ Detailed user info with fallback values */}
+            <div className="mt-4 space-y-1 text-sm text-white">
+              <p>
+                <span className="font-semibold text-pink-400">Email:</span>{" "}
+                {user.email || "—"}
+              </p>
+              <p>
+                <span className="font-semibold text-pink-400">DOB:</span>{" "}
+                {user.dob || "Not provided"}
+              </p>
+              <p>
+                <span className="font-semibold text-pink-400">Interest:</span>{" "}
+                {user.interest || "Not selected"}
+              </p>
+            </div>
 
-  <div className="flex items-center gap-2 text-white/70 text-sm">
-    <FilmIcon className="h-4 w-4" /> Movies
-    <span className="mx-1">•</span>
-    <Trophy className="h-4 w-4" /> Cricket
-    <span className="mx-1">•</span>
-    <Zap className="h-4 w-4" /> Offers
-  </div>
-</DarkCard>
+            <Separator className="my-5 bg-white/10" />
+
+            <div className="flex items-center gap-2 text-white/70 text-sm">
+              <FilmIcon className="h-4 w-4" /> Movies
+              <span className="mx-1">•</span>
+              <Trophy className="h-4 w-4" /> Cricket
+              <span className="mx-1">•</span>
+              <Zap className="h-4 w-4" /> Offers
+            </div>
+          </DarkCard>
+
           <DarkCard title="Why CineCrick">
             <div className="mt-2 grid gap-3 sm:grid-cols-2">
               <Pro
@@ -403,11 +414,13 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ===== FOOTER (FULL WIDTH) ===== */}
-      <footer className="mt-10 border-t border-white/10 bg-black/50">
+      {/* ===== FOOTER (HIGHLIGHTED) ===== */}
+      <footer className="mt-14 border-t border-pink-500/30 bg-gradient-to-b from-black to-[#070812] shadow-[0_-20px_80px_rgba(236,72,153,0.25)]">
         <div className="w-full px-6 lg:px-14 py-10 grid gap-8 md:grid-cols-4">
           <div>
-            <div className="text-2xl font-black text-pink-400">CineCrick</div>
+            <div className="text-3xl font-black text-pink-400 drop-shadow-[0_0_15px_rgba(236,72,153,0.7)]">
+              CineCrick
+            </div>
             <p className="mt-2 text-sm text-white/70 leading-relaxed">
               Your one-stop destination for movies, cricket, events, and bookings.
             </p>
@@ -438,7 +451,7 @@ export default function Home() {
           />
         </div>
 
-        <div className="border-t border-white/10 py-4 text-center text-xs text-white/55">
+        <div className="border-t border-pink-500/20 py-4 text-center text-xs text-white/55">
           © {new Date().getFullYear()} CineCrick. All rights reserved.
         </div>
       </footer>
@@ -533,7 +546,10 @@ function FooterCol({ title, items }) {
       <div className="font-bold text-white">{title}</div>
       <ul className="mt-3 space-y-2 text-sm text-white/70">
         {items.map((x) => (
-          <li key={x} className="cursor-pointer hover:text-pink-400 transition">
+          <li
+            key={x}
+            className="cursor-pointer hover:text-pink-400 hover:translate-x-1 transition-all duration-200"
+          >
             {x}
           </li>
         ))}
