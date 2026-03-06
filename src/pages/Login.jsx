@@ -21,12 +21,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 
 export default function Login() {
   const navigate = useNavigate();
-
+  
   const [showPwd, setShowPwd] = useState(false);
   const [remember, setRemember] = useState(false);
 
   const [form, setForm] = useState({ email: "", password: "" });
-
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   // Forgot password UI (demo)
   const [openForgot, setOpenForgot] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
@@ -56,6 +57,7 @@ export default function Login() {
 
   function handleChange(e) {
     const { name, value } = e.target;
+    setError("");
     setForm((p) => ({ ...p, [name]: value }));
   }
 
@@ -73,11 +75,14 @@ export default function Login() {
     const password = form.password;
 
     if (!email || !password) {
-      alert("Please enter email and password.");
+      setError("Please enter email and password.");
       return;
     }
 
     try {
+      setLoading(true);
+      setError("");
+
       const data = await api("/auth/login", {
         method: "POST",
         body: { email, password },
@@ -93,7 +98,9 @@ export default function Login() {
 
       navigate("/home", { replace: true });
     } catch (err) {
-      alert(err?.message || "Login failed");
+      setError(err?.message || "Login failed");
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -146,6 +153,12 @@ export default function Login() {
                 Login to continue to CineCrick.
               </p>
             </div>
+
+            {error && (
+  <p className="mb-4 rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+    {error}
+  </p>
+)}
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
@@ -203,10 +216,13 @@ export default function Login() {
                 </button>
               </div>
 
-              <Button className="w-full bg-gradient-to-r from-pink-500 to-violet-500 font-bold hover:opacity-95 h-11">
-                <LogIn className="mr-2 h-4 w-4" />
-                Login
-              </Button>
+              <Button
+                 disabled={loading}
+                className="w-full bg-gradient-to-r from-pink-500 to-violet-500 font-bold hover:opacity-95 h-11 disabled:opacity-60"
+  > 
+  <LogIn className="mr-2 h-4 w-4" />
+  {loading ? "Logging in..." : "Login"}
+</Button>
 
               <p className="text-sm text-white/70 text-center">
                 New user?{" "}

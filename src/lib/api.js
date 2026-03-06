@@ -13,6 +13,8 @@ export function setToken(token) {
 
 export function clearToken() {
   localStorage.removeItem("cinecrick_token");
+  localStorage.removeItem("cinecrick_user");
+  localStorage.removeItem("cinecrick_logged_in");
 }
 
 // -----------------------------
@@ -30,7 +32,7 @@ export async function api(
     "Content-Type": "application/json",
   };
 
-  // attach JWT token if required
+  // Attach JWT token if required
   if (auth) {
     const token = getToken();
     if (token) {
@@ -46,11 +48,24 @@ export async function api(
 
   const data = await res.json().catch(() => ({}));
 
+  // -----------------------------
+  // Auto logout if token expired
+  // -----------------------------
+  if (res.status === 401) {
+    clearToken();
+    window.location.href = "/";
+    throw new Error("Session expired. Please login again.");
+  }
+
+  // -----------------------------
+  // Handle other API errors
+  // -----------------------------
   if (!res.ok) {
     const msg =
       data?.error ||
-      (Array.isArray(data?.errors) ? data.errors.join(", ") : null) ||
-      `Request failed (${res.status})`;
+      (Array.isArray(data?.errors)
+        ? data.errors.join(", ")
+        : "Request failed");
 
     throw new Error(msg);
   }

@@ -25,52 +25,54 @@ export default function Signup() {
     dob: "",
     interest: "",
   });
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   function handleChange(e) {
     const { name, value } = e.target;
+    setError("");
     setForm((p) => ({ ...p, [name]: value }));
   }
 
-  async function handleSubmit(e) {
-    e.preventDefault();
+   async function handleSubmit(e) {
+  e.preventDefault();
 
-    if (!form.email || !form.password || !form.dob || !form.interest) {
-      alert("Please fill all fields");
-      return;
-    }
-
-    const email = form.email.trim();
-    const password = form.password;
-
-    // name from email (until you add name input)
-    const name = email.includes("@") ? email.split("@")[0] : email;
-
-    try {
-      const data = await api("/auth/signup", {
-        method: "POST",
-        body: {
-          name,
-          email,
-          password,
-          password_confirmation: password,
-          dob: form.dob,
-          interest: form.interest,
-        },
-      });
-
-      // ✅ Save token + user (important)
-      setToken(data.token);
-      localStorage.setItem("cinecrick_user", JSON.stringify(data.user));
-      localStorage.setItem("cinecrick_logged_in", "true");
-
-      // optional (not needed if API returns user with dob/interest)
-      // localStorage.setItem("cinecrick_profile", JSON.stringify({ dob: form.dob, interest: form.interest }));
-
-      navigate("/home", { replace: true });
-    } catch (err) {
-      alert(err.message || "Signup failed");
-    }
+  if (!form.email || !form.password || !form.dob || !form.interest) {
+    setError("Please fill all fields");
+    return;
   }
+
+  const email = form.email.trim();
+  const password = form.password;
+  const name = email.includes("@") ? email.split("@")[0] : email;
+
+  try {
+    setLoading(true);
+    setError("");
+
+    const data = await api("/auth/signup", {
+      method: "POST",
+      body: {
+        name,
+        email,
+        password,
+        password_confirmation: password,
+        dob: form.dob,
+        interest: form.interest,
+      },
+    });
+
+    setToken(data.token);
+    localStorage.setItem("cinecrick_user", JSON.stringify(data.user));
+    localStorage.setItem("cinecrick_logged_in", "true");
+
+    navigate("/home", { replace: true });
+  } catch (err) {
+    setError(err.message || "Signup failed");
+  } finally {
+    setLoading(false);
+  }
+}
 
   return (
     <div className="relative min-h-screen overflow-hidden text-white">
@@ -105,6 +107,11 @@ export default function Signup() {
                 + Cricket <Trophy size={14} className="inline mx-1" /> in one place
               </p>
             </div>
+              {error && (
+  <p className="rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+    {error}
+  </p>
+)}
 
             <form onSubmit={handleSubmit} className="space-y-5">
               <Input
@@ -169,10 +176,12 @@ export default function Signup() {
                 </SelectContent>
               </Select>
 
-              <Button className="w-full h-11 bg-gradient-to-r from-pink-500 to-rose-400 font-semibold hover:scale-[1.02] transition-all duration-300 shadow-lg">
-                Get Started →
-              </Button>
-
+             <Button
+  disabled={loading}
+  className="w-full h-11 bg-gradient-to-r from-pink-500 to-rose-400 font-semibold hover:scale-[1.02] transition-all duration-300 shadow-lg disabled:opacity-60"
+>
+  {loading ? "Creating account..." : "Get Started →"}
+</Button>
               <p className="text-sm text-white/70 text-center mt-4">
                 Already have an account?{" "}
                 <Link
