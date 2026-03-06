@@ -42,11 +42,9 @@ import {
 export default function Home() {
   const navigate = useNavigate();
 
-  // ✅ Token check
   const token = getToken();
   if (!token) return <Navigate to="/" replace />;
 
-  // ✅ Real user from backend (/me)
   const [user, setUser] = useState(null);
   const [loadingUser, setLoadingUser] = useState(true);
 
@@ -62,7 +60,6 @@ export default function Home() {
           setLoadingUser(false);
         }
       } catch (err) {
-        // Retry because Render free server may be waking up
         if (retry < 3 && !cancelled) {
           setTimeout(() => loadUser(retry + 1), 3000);
           return;
@@ -87,8 +84,26 @@ export default function Home() {
     clearToken();
     navigate("/", { replace: true });
   }
+  
+  function handleMenuPick(category, item) {
+  if (category === "Account" && item === "Logout") {
+    logout();
+    return;
+  }
 
-  // ✅ Menus
+  if (item === "Grounds" || item === "Ground Booking") {
+    navigate("/grounds");
+    return;
+  }
+
+  if (item === "My Bookings") {
+    navigate("/my-bookings");
+    return;
+  }
+
+  alert(`${category} → ${item}`);
+}
+
   const MENUS = useMemo(
     () => ({
       Movies: [
@@ -102,6 +117,7 @@ export default function Home() {
         "Reviews",
       ],
       Cricket: [
+        "Grounds",
         "Live Matches",
         "Scores",
         "Schedule",
@@ -109,11 +125,9 @@ export default function Home() {
         "Highlights",
         "Rankings",
         "Stats",
-        "Grounds",
       ],
       Bookings: [
         "Ground Booking",
-        "Movie Tickets",
         "My Bookings",
         "Cancel Booking",
         "Refund Status",
@@ -157,26 +171,25 @@ export default function Home() {
 
   const menuKeys = Object.keys(MENUS);
 
-  // ✅ Slideshow
   const slides = useMemo(
     () => [
       {
-        title: "Tonight: Movie + Match Combo",
-        subtitle: "Book tickets and ground slots in one place",
-        img: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=1800&q=80",
-        tag: "Trending",
-      },
-      {
-        title: "Live Cricket Updates",
-        subtitle: "Scores • Schedule • Highlights",
+        title: "Book Cricket Grounds Instantly",
+        subtitle: "Check slots, compare prices, and confirm bookings in minutes",
         img: "https://images.unsplash.com/photo-1593341646782-e0b495cff86d?auto=format&fit=crop&w=1800&q=80",
         tag: "Cricket",
       },
       {
-        title: "Weekend Events",
-        subtitle: "Concerts • Standup • Theatre • Festivals",
+        title: "Track Available Time Slots",
+        subtitle: "Morning, evening, and premium hours with live slot status",
+        img: "https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?auto=format&fit=crop&w=1800&q=80",
+        tag: "Booking",
+      },
+      {
+        title: "Manage Your Bookings Easily",
+        subtitle: "View booked slots, prices, and booking history in one place",
         img: "https://images.unsplash.com/photo-1517602302552-471fe67acf66?auto=format&fit=crop&w=1800&q=80",
-        tag: "Events",
+        tag: "My Bookings",
       },
     ],
     []
@@ -188,7 +201,25 @@ export default function Home() {
     return () => clearInterval(t);
   }, [slides.length]);
 
-  // ✅ Loading state while calling /me
+  function handleMenuPick(category, item) {
+    if (category === "Account" && item === "Logout") {
+      logout();
+      return;
+    }
+
+    if (item === "Grounds" || item === "Ground Booking") {
+      navigate("/grounds");
+      return;
+    }
+
+    if (item === "My Bookings") {
+      navigate("/my-bookings");
+      return;
+    }
+
+    alert(`${category} → ${item}`);
+  }
+
   if (loadingUser) {
     return (
       <div className="min-h-screen bg-[#070812] text-white flex items-center justify-center">
@@ -201,12 +232,10 @@ export default function Home() {
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#070812] text-white">
-      {/* ===== HYPNOTIC BACKGROUND ===== */}
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute -top-40 left-10 h-[520px] w-[520px] rounded-full bg-pink-500/20 blur-3xl animate-[blob_14s_infinite]" />
         <div className="absolute top-10 right-[-120px] h-[560px] w-[560px] rounded-full bg-violet-500/20 blur-3xl animate-[blob_18s_infinite]" />
         <div className="absolute bottom-[-220px] left-1/3 h-[620px] w-[620px] rounded-full bg-cyan-500/10 blur-3xl animate-[blob_20s_infinite]" />
-
         <div className="absolute inset-0 opacity-[0.08] bg-[linear-gradient(to_right,white_1px,transparent_1px),linear-gradient(to_bottom,white_1px,transparent_1px)] bg-[size:60px_60px]" />
         <div className="absolute inset-0 bg-[radial-gradient(900px_420px_at_50%_0%,rgba(255,46,99,.16),transparent_60%)]" />
         <div className="absolute inset-0 bg-[radial-gradient(900px_520px_at_50%_100%,rgba(124,58,237,.18),transparent_60%)]" />
@@ -222,7 +251,6 @@ export default function Home() {
         }
       `}</style>
 
-      {/* ===== HEADER (FULL WIDTH) ===== */}
       <header className="sticky top-0 z-50 border-b border-white/10 bg-black/55 backdrop-blur-xl">
         <div className="w-full px-6 lg:px-14 py-4">
           <div className="flex items-center justify-between gap-3">
@@ -256,7 +284,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* NAV */}
           <div className="mt-4">
             <NavigationMenu>
               <NavigationMenuList className="flex flex-wrap gap-2">
@@ -265,10 +292,7 @@ export default function Home() {
                     <MenuDropdown
                       label={k}
                       items={MENUS[k]}
-                      onPick={(item) => {
-                        if (k === "Account" && item === "Logout") logout();
-                        else alert(`${k} → ${item}`);
-                      }}
+                      onPick={(item) => handleMenuPick(k, item)}
                     />
                   </NavigationMenuItem>
                 ))}
@@ -278,7 +302,6 @@ export default function Home() {
         </div>
       </header>
 
-      {/* ===== HERO (FULL WIDTH) ===== */}
       <section className="w-full px-6 lg:px-14 pt-6">
         <Card className="overflow-hidden border-white/10 bg-zinc-950/40 shadow-[0_28px_80px_rgba(0,0,0,.65)]">
           <CardContent className="relative p-0">
@@ -302,14 +325,18 @@ export default function Home() {
               </div>
 
               <div className="mt-5 flex flex-wrap gap-3">
-                <Button className="bg-gradient-to-r from-pink-500 to-violet-500 font-bold hover:opacity-95">
-                  Explore
+                <Button
+                  onClick={() => navigate("/grounds")}
+                  className="bg-gradient-to-r from-pink-500 to-violet-500 font-bold hover:opacity-95"
+                >
+                  Explore Grounds
                 </Button>
                 <Button
+                  onClick={() => navigate("/my-bookings")}
                   variant="secondary"
                   className="bg-white/10 text-white hover:bg-white/15"
                 >
-                  View offers
+                  My Bookings
                 </Button>
               </div>
 
@@ -350,7 +377,6 @@ export default function Home() {
         </Card>
       </section>
 
-      {/* ===== BELOW SLIDESHOW (FULL WIDTH) ===== */}
       <section className="w-full px-6 lg:px-14 py-6">
         <div className="grid gap-4 lg:grid-cols-2">
           <DarkCard title="About CineCrick">
@@ -360,7 +386,6 @@ export default function Home() {
               bookings with a premium experience.
             </p>
 
-            {/* ✅ Detailed user info with fallback values */}
             <div className="mt-4 space-y-1 text-sm text-white">
               <p>
                 <span className="font-semibold text-pink-400">Email:</span>{" "}
@@ -414,7 +439,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ===== FOOTER (HIGHLIGHTED) ===== */}
       <footer className="mt-14 border-t border-pink-500/30 bg-gradient-to-b from-black to-[#070812] shadow-[0_-20px_80px_rgba(236,72,153,0.25)]">
         <div className="w-full px-6 lg:px-14 py-10 grid gap-8 md:grid-cols-4">
           <div>

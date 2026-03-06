@@ -2,6 +2,9 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Home from "./pages/Home";
+import Grounds from "./pages/Grounds";
+import GroundDetails from "./pages/GroundDetails";
+import MyBookings from "./pages/MyBookings";
 import PrivateRoute from "./components/PrivateRoute";
 
 export default function App() {
@@ -22,6 +25,9 @@ export default function App() {
           </PrivateRoute>
         }
       />
+      <Route path="/grounds" element={<Grounds />} />
+<Route path="/grounds/:id" element={<GroundDetails />} />
+<Route path="/my-bookings" element={<MyBookings />} />
 
       {/* Any unknown route → Login */}
       <Route path="*" element={<Navigate to="/" replace />} />
