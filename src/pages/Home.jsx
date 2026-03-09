@@ -84,25 +84,30 @@ export default function Home() {
     clearToken();
     navigate("/", { replace: true });
   }
-  
+
   function handleMenuPick(category, item) {
-  if (category === "Account" && item === "Logout") {
-    logout();
-    return;
-  }
+    if (category === "Account" && item === "Logout") {
+      logout();
+      return;
+    }
 
-  if (item === "Grounds" || item === "Ground Booking") {
-    navigate("/grounds");
-    return;
-  }
+    if (item === "Grounds" || item === "Ground Booking") {
+      navigate("/grounds");
+      return;
+    }
 
-  if (item === "My Bookings") {
-    navigate("/my-bookings");
-    return;
-  }
+    if (item === "My Bookings") {
+      navigate("/my-bookings");
+      return;
+    }
 
-  alert(`${category} → ${item}`);
-}
+    if (item === "Admin Grounds") {
+      navigate("/admin/grounds");
+      return;
+    }
+
+    alert(`${category} → ${item}`);
+  }
 
   const MENUS = useMemo(
     () => ({
@@ -157,12 +162,9 @@ export default function Home() {
       ],
       Account: [
         "Profile",
+        "Admin Grounds",
+        "My Bookings",
         "Settings",
-        "Privacy",
-        "Notifications",
-        "Help Center",
-        "Terms",
-        "About",
         "Logout",
       ],
     }),
@@ -196,29 +198,11 @@ export default function Home() {
   );
 
   const [slide, setSlide] = useState(0);
+
   useEffect(() => {
     const t = setInterval(() => setSlide((s) => (s + 1) % slides.length), 3500);
     return () => clearInterval(t);
   }, [slides.length]);
-
-  function handleMenuPick(category, item) {
-    if (category === "Account" && item === "Logout") {
-      logout();
-      return;
-    }
-
-    if (item === "Grounds" || item === "Ground Booking") {
-      navigate("/grounds");
-      return;
-    }
-
-    if (item === "My Bookings") {
-      navigate("/my-bookings");
-      return;
-    }
-
-    alert(`${category} → ${item}`);
-  }
 
   if (loadingUser) {
     return (
@@ -364,6 +348,7 @@ export default function Home() {
               >
                 ‹
               </button>
+
               <button
                 type="button"
                 onClick={() => setSlide((s) => (s + 1) % slides.length)}

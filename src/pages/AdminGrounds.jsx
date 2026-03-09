@@ -1,10 +1,13 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
 export default function AdminGrounds() {
+  const navigate = useNavigate();
+
   const [form, setForm] = useState({
     name: "",
     location: "",
@@ -29,8 +32,9 @@ export default function AdminGrounds() {
   async function loadGrounds() {
     try {
       setLoadingGrounds(true);
+      setError("");
       const data = await api("/grounds");
-      setGrounds(data);
+      setGrounds(Array.isArray(data) ? data : []);
     } catch (err) {
       setError(err.message || "Failed to load grounds");
     } finally {
@@ -51,20 +55,32 @@ export default function AdminGrounds() {
     setMessage("");
     setError("");
 
+    if (
+      !form.name.trim() ||
+      !form.location.trim() ||
+      !form.sport_type.trim() ||
+      !form.price_per_hour ||
+      !form.opening_time.trim() ||
+      !form.closing_time.trim()
+    ) {
+      setError("Please fill all required fields.");
+      return;
+    }
+
     try {
       setLoading(true);
 
       await api("/grounds", {
         method: "POST",
         body: {
-          name: form.name,
-          location: form.location,
-          sport_type: form.sport_type,
+          name: form.name.trim(),
+          location: form.location.trim(),
+          sport_type: form.sport_type.trim(),
           price_per_hour: Number(form.price_per_hour),
-          opening_time: form.opening_time,
-          closing_time: form.closing_time,
-          image_url: form.image_url,
-          amenities: form.amenities,
+          opening_time: form.opening_time.trim(),
+          closing_time: form.closing_time.trim(),
+          image_url: form.image_url.trim(),
+          amenities: form.amenities.trim(),
         },
       });
 
@@ -81,7 +97,7 @@ export default function AdminGrounds() {
         amenities: "",
       });
 
-      loadGrounds();
+      await loadGrounds();
     } catch (err) {
       setError(err.message || "Failed to add ground");
     } finally {
@@ -91,21 +107,30 @@ export default function AdminGrounds() {
 
   return (
     <div className="min-h-screen bg-[#070812] text-white px-6 py-10">
-      <h1 className="text-4xl font-black text-pink-400 mb-8">Admin • Add Ground</h1>
+      <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
+        <h1 className="text-4xl font-black text-pink-400">Admin Grounds</h1>
+
+        <Button
+          onClick={() => navigate("/grounds")}
+          className="bg-white/10 text-white hover:bg-white/15"
+        >
+          View User Grounds Page
+        </Button>
+      </div>
 
       <div className="grid gap-8 lg:grid-cols-2">
-        <Card className="border-white/10 bg-zinc-950/55">
+        <Card className="border-white/10 bg-zinc-950/55 shadow-[0_20px_60px_rgba(0,0,0,.55)]">
           <CardContent className="p-6">
-            <h2 className="text-2xl font-bold mb-4">Create New Ground</h2>
+            <h2 className="mb-5 text-2xl font-bold">Add New Ground</h2>
 
             {message ? (
-              <div className="mb-4 rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-3 text-green-300">
+              <div className="mb-4 rounded-xl border border-green-500/30 bg-green-500/10 px-4 py-3 text-green-300">
                 {message}
               </div>
             ) : null}
 
             {error ? (
-              <div className="mb-4 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-red-300">
+              <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-red-300">
                 {error}
               </div>
             ) : null}
@@ -187,9 +212,9 @@ export default function AdminGrounds() {
           </CardContent>
         </Card>
 
-        <Card className="border-white/10 bg-zinc-950/55">
+        <Card className="border-white/10 bg-zinc-950/55 shadow-[0_20px_60px_rgba(0,0,0,.55)]">
           <CardContent className="p-6">
-            <h2 className="text-2xl font-bold mb-4">Existing Grounds</h2>
+            <h2 className="mb-5 text-2xl font-bold">Existing Grounds</h2>
 
             {loadingGrounds ? (
               <p className="text-white/70">Loading grounds...</p>
@@ -200,13 +225,17 @@ export default function AdminGrounds() {
                 {grounds.map((ground) => (
                   <div
                     key={ground.id}
-                    className="rounded-xl border border-white/10 bg-white/5 p-4"
+                    className="rounded-2xl border border-white/10 bg-white/5 p-4"
                   >
-                    <h3 className="text-lg font-bold text-pink-400">{ground.name}</h3>
+                    <h3 className="text-lg font-bold text-pink-400">
+                      {ground.name}
+                    </h3>
                     <p className="text-white/70">{ground.location}</p>
                     <p className="text-white/70">Sport: {ground.sport_type}</p>
-                    <p className="text-white/70">₹{ground.price_per_hour}/hour</p>
-                    <p className="text-white/60 text-sm mt-1">
+                    <p className="text-white/70">
+                      ₹{ground.price_per_hour}/hour
+                    </p>
+                    <p className="text-white/60 text-sm">
                       {ground.opening_time} - {ground.closing_time}
                     </p>
                   </div>

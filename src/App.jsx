@@ -11,7 +11,7 @@ import PrivateRoute from "./components/PrivateRoute";
 export default function App() {
   return (
     <Routes>
-      {/* ✅ Default page = Login */}
+      {/* Default page = Login */}
       <Route path="/" element={<Login />} />
 
       {/* Signup page */}
@@ -26,10 +26,46 @@ export default function App() {
           </PrivateRoute>
         }
       />
-      <Route path="/grounds" element={<Grounds />} />
-<Route path="/grounds/:id" element={<GroundDetails />} />
-<Route path="/my-bookings" element={<MyBookings />} />
-<Route path="/admin/grounds" element={<AdminGrounds />} />
+
+      {/* Grounds list */}
+      <Route
+        path="/grounds"
+        element={
+          <PrivateRoute>
+            <Grounds />
+          </PrivateRoute>
+        }
+      />
+
+      {/* Ground details */}
+      <Route
+        path="/grounds/:id"
+        element={
+          <PrivateRoute>
+            <GroundDetails />
+          </PrivateRoute>
+        }
+      />
+
+      {/* My bookings */}
+      <Route
+        path="/my-bookings"
+        element={
+          <PrivateRoute>
+            <MyBookings />
+          </PrivateRoute>
+        }
+      />
+
+      {/* Admin grounds */}
+      <Route
+        path="/admin/grounds"
+        element={
+          <PrivateRoute>
+            <AdminGrounds />
+          </PrivateRoute>
+        }
+      />
 
       {/* Any unknown route → Login */}
       <Route path="*" element={<Navigate to="/" replace />} />
