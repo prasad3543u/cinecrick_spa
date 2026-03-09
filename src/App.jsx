@@ -6,6 +6,7 @@ import Grounds from "./pages/Grounds";
 import GroundDetails from "./pages/GroundDetails";
 import MyBookings from "./pages/MyBookings";
 import AdminGrounds from "./pages/AdminGrounds";
+import AdminSlots from "./pages/AdminSlots";
 import PrivateRoute from "./components/PrivateRoute";
 
 export default function App() {
@@ -63,6 +64,14 @@ export default function App() {
         element={
           <PrivateRoute>
             <AdminGrounds />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/admin/slots"
+        element={
+          <PrivateRoute>
+            <AdminSlots />
           </PrivateRoute>
         }
       />

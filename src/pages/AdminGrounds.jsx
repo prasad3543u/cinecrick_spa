@@ -17,6 +17,8 @@ export default function AdminGrounds() {
     closing_time: "",
     image_url: "",
     amenities: "",
+    admin_name: "",
+    admin_phone: "",
   });
 
   const [grounds, setGrounds] = useState([]);
@@ -24,6 +26,8 @@ export default function AdminGrounds() {
   const [loadingGrounds, setLoadingGrounds] = useState(true);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [slotDates, setSlotDates] = useState({});
+  const [generatingFor, setGeneratingFor] = useState(null);
 
   useEffect(() => {
     loadGrounds();
@@ -61,7 +65,9 @@ export default function AdminGrounds() {
       !form.sport_type.trim() ||
       !form.price_per_hour ||
       !form.opening_time.trim() ||
-      !form.closing_time.trim()
+      !form.closing_time.trim() ||
+      !form.admin_name.trim() ||
+      !form.admin_phone.trim()
     ) {
       setError("Please fill all required fields.");
       return;
@@ -81,6 +87,8 @@ export default function AdminGrounds() {
           closing_time: form.closing_time.trim(),
           image_url: form.image_url.trim(),
           amenities: form.amenities.trim(),
+          admin_name: form.admin_name.trim(),
+          admin_phone: form.admin_phone.trim(),
         },
       });
 
@@ -95,6 +103,8 @@ export default function AdminGrounds() {
         closing_time: "",
         image_url: "",
         amenities: "",
+        admin_name: "",
+        admin_phone: "",
       });
 
       await loadGrounds();
@@ -102,6 +112,32 @@ export default function AdminGrounds() {
       setError(err.message || "Failed to add ground");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleGenerateSlots(groundId) {
+    const slotDate = slotDates[groundId];
+
+    if (!slotDate) {
+      alert("Please select a date first");
+      return;
+    }
+
+    try {
+      setGeneratingFor(groundId);
+      setMessage("");
+      setError("");
+
+      const response = await api(`/grounds/${groundId}/generate_slots`, {
+        method: "POST",
+        body: { slot_date: slotDate },
+      });
+
+      setMessage(response.message || "Slots generated successfully.");
+    } catch (err) {
+      setError(err.message || "Failed to generate slots");
+    } finally {
+      setGeneratingFor(null);
     }
   }
 
@@ -136,76 +172,18 @@ export default function AdminGrounds() {
             ) : null}
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              <Input
-                name="name"
-                placeholder="Ground Name"
-                value={form.name}
-                onChange={handleChange}
-                className="bg-black/40 border-white/10"
-              />
+              <Input name="name" placeholder="Ground Name" value={form.name} onChange={handleChange} className="bg-black/40 border-white/10" />
+              <Input name="location" placeholder="Location" value={form.location} onChange={handleChange} className="bg-black/40 border-white/10" />
+              <Input name="sport_type" placeholder="Sport Type" value={form.sport_type} onChange={handleChange} className="bg-black/40 border-white/10" />
+              <Input name="price_per_hour" type="number" placeholder="Price Per Hour" value={form.price_per_hour} onChange={handleChange} className="bg-black/40 border-white/10" />
+              <Input name="opening_time" placeholder="Opening Time (example: 06:00)" value={form.opening_time} onChange={handleChange} className="bg-black/40 border-white/10" />
+              <Input name="closing_time" placeholder="Closing Time (example: 22:00)" value={form.closing_time} onChange={handleChange} className="bg-black/40 border-white/10" />
+              <Input name="image_url" placeholder="Image URL" value={form.image_url} onChange={handleChange} className="bg-black/40 border-white/10" />
+              <Input name="amenities" placeholder="Amenities (comma separated)" value={form.amenities} onChange={handleChange} className="bg-black/40 border-white/10" />
+              <Input name="admin_name" placeholder="Ground Owner / Admin Name" value={form.admin_name} onChange={handleChange} className="bg-black/40 border-white/10" />
+              <Input name="admin_phone" placeholder="Ground Owner / Admin WhatsApp Number" value={form.admin_phone} onChange={handleChange} className="bg-black/40 border-white/10" />
 
-              <Input
-                name="location"
-                placeholder="Location"
-                value={form.location}
-                onChange={handleChange}
-                className="bg-black/40 border-white/10"
-              />
-
-              <Input
-                name="sport_type"
-                placeholder="Sport Type"
-                value={form.sport_type}
-                onChange={handleChange}
-                className="bg-black/40 border-white/10"
-              />
-
-              <Input
-                name="price_per_hour"
-                type="number"
-                placeholder="Price Per Hour"
-                value={form.price_per_hour}
-                onChange={handleChange}
-                className="bg-black/40 border-white/10"
-              />
-
-              <Input
-                name="opening_time"
-                placeholder="Opening Time (example: 06:00)"
-                value={form.opening_time}
-                onChange={handleChange}
-                className="bg-black/40 border-white/10"
-              />
-
-              <Input
-                name="closing_time"
-                placeholder="Closing Time (example: 22:00)"
-                value={form.closing_time}
-                onChange={handleChange}
-                className="bg-black/40 border-white/10"
-              />
-
-              <Input
-                name="image_url"
-                placeholder="Image URL"
-                value={form.image_url}
-                onChange={handleChange}
-                className="bg-black/40 border-white/10"
-              />
-
-              <Input
-                name="amenities"
-                placeholder="Amenities (comma separated)"
-                value={form.amenities}
-                onChange={handleChange}
-                className="bg-black/40 border-white/10"
-              />
-
-              <Button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-gradient-to-r from-pink-500 to-violet-500"
-              >
+              <Button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-pink-500 to-violet-500">
                 {loading ? "Adding..." : "Add Ground"}
               </Button>
             </form>
@@ -223,21 +201,47 @@ export default function AdminGrounds() {
             ) : (
               <div className="space-y-4">
                 {grounds.map((ground) => (
-                  <div
-                    key={ground.id}
-                    className="rounded-2xl border border-white/10 bg-white/5 p-4"
-                  >
-                    <h3 className="text-lg font-bold text-pink-400">
-                      {ground.name}
-                    </h3>
-                    <p className="text-white/70">{ground.location}</p>
-                    <p className="text-white/70">Sport: {ground.sport_type}</p>
-                    <p className="text-white/70">
-                      ₹{ground.price_per_hour}/hour
-                    </p>
-                    <p className="text-white/60 text-sm">
-                      {ground.opening_time} - {ground.closing_time}
-                    </p>
+                  <div key={ground.id} className="rounded-2xl border border-white/10 bg-white/5 p-4 space-y-3">
+                    <div>
+                      <h3 className="text-lg font-bold text-pink-400">{ground.name}</h3>
+                      <p className="text-white/70">{ground.location}</p>
+                      <p className="text-white/70">Sport: {ground.sport_type}</p>
+                      <p className="text-white/70">₹{ground.price_per_hour}/hour</p>
+                      <p className="text-white/60 text-sm">{ground.opening_time} - {ground.closing_time}</p>
+                      <p className="text-white/70 text-sm">Owner: {ground.admin_name || "Not set"}</p>
+                      <p className="text-white/70 text-sm">WhatsApp: {ground.admin_phone || "Not set"}</p>
+                    </div>
+
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                      <Input
+                        type="date"
+                        value={slotDates[ground.id] || ""}
+                        onChange={(e) =>
+                          setSlotDates((prev) => ({
+                            ...prev,
+                            [ground.id]: e.target.value,
+                          }))
+                        }
+                        className="bg-black/40 border-white/10"
+                      />
+
+                      <Button
+                        type="button"
+                        onClick={() => handleGenerateSlots(ground.id)}
+                        disabled={generatingFor === ground.id}
+                        className="bg-gradient-to-r from-pink-500 to-violet-500"
+                      >
+                        {generatingFor === ground.id ? "Generating..." : "Generate Slots"}
+                      </Button>
+
+                      <Button
+                        type="button"
+                        onClick={() => navigate("/admin/slots")}
+                        className="bg-white/10 text-white hover:bg-white/15"
+                      >
+                        Manage Slots
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>
