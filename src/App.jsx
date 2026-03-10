@@ -9,6 +9,7 @@ import AdminGrounds from "./pages/AdminGrounds";
 import AdminSlots from "./pages/AdminSlots";
 import PrivateRoute from "./components/PrivateRoute";
 import AdminRoute from "./components/AdminRoute";
+import AdminBookings from "./pages/AdminBookings";  
 
 export default function App() {
   return (
@@ -75,6 +76,16 @@ export default function App() {
         element={
           <AdminRoute>
             <AdminSlots />
+          </AdminRoute>
+        }
+      />
+
+      {/* Admin bookings — admin only */}
+      <Route
+        path="/admin/bookings"
+        element={
+          <AdminRoute>
+            <AdminBookings />
           </AdminRoute>
         }
       />

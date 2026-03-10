@@ -67,6 +67,8 @@ export default function Home() {
     if (item === "Grounds" || item === "Ground Booking") { navigate("/grounds"); return; }
     if (item === "My Bookings") { navigate("/my-bookings"); return; }
     if (item === "Admin Grounds") { navigate("/admin/grounds"); return; }
+    if (item === "Admin Bookings") { navigate("/admin/bookings"); return; }
+
     alert(`${category} → ${item}`);
   }
 
@@ -82,7 +84,7 @@ export default function Home() {
 
     // Only show Admin Grounds if user is admin
     if (user?.role === "admin") {
-      base.Account = ["Profile", "Admin Grounds", "My Bookings", "Settings", "Logout"];
+      base.Account = ["Profile", "Admin Grounds", "Admin Bookings", "My Bookings", "Settings", "Logout"];
     }
 
     return base;

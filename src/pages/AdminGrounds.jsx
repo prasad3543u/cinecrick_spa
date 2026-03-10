@@ -26,8 +26,6 @@ export default function AdminGrounds() {
   const [loadingGrounds, setLoadingGrounds] = useState(true);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  const [slotDates, setSlotDates] = useState({});
-  const [generatingFor, setGeneratingFor] = useState(null);
 
   useEffect(() => {
     loadGrounds();
@@ -115,32 +113,6 @@ export default function AdminGrounds() {
     }
   }
 
-  async function handleGenerateSlots(groundId) {
-    const slotDate = slotDates[groundId];
-
-    if (!slotDate) {
-      alert("Please select a date first");
-      return;
-    }
-
-    try {
-      setGeneratingFor(groundId);
-      setMessage("");
-      setError("");
-
-      const response = await api(`/grounds/${groundId}/generate_slots`, {
-        method: "POST",
-        body: { slot_date: slotDate },
-      });
-
-      setMessage(response.message || "Slots generated successfully.");
-    } catch (err) {
-      setError(err.message || "Failed to generate slots");
-    } finally {
-      setGeneratingFor(null);
-    }
-  }
-
   return (
     <div className="min-h-screen bg-[#070812] text-white px-6 py-10">
       <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
@@ -213,27 +185,6 @@ export default function AdminGrounds() {
                     </div>
 
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-                      <Input
-                        type="date"
-                        value={slotDates[ground.id] || ""}
-                        onChange={(e) =>
-                          setSlotDates((prev) => ({
-                            ...prev,
-                            [ground.id]: e.target.value,
-                          }))
-                        }
-                        className="bg-black/40 border-white/10"
-                      />
-
-                      <Button
-                        type="button"
-                        onClick={() => handleGenerateSlots(ground.id)}
-                        disabled={generatingFor === ground.id}
-                        className="bg-gradient-to-r from-pink-500 to-violet-500"
-                      >
-                        {generatingFor === ground.id ? "Generating..." : "Generate Slots"}
-                      </Button>
-
                       <Button
                         type="button"
                         onClick={() => navigate("/admin/slots")}
