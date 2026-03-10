@@ -34,45 +34,45 @@ export default function Signup() {
     setForm((p) => ({ ...p, [name]: value }));
   }
 
-   async function handleSubmit(e) {
-  e.preventDefault();
+  async function handleSubmit(e) {
+    e.preventDefault();
 
-  if (!form.email || !form.password || !form.dob || !form.interest) {
-    setError("Please fill all fields");
-    return;
+    if (!form.email || !form.password || !form.dob || !form.interest) {
+      setError("Please fill all fields");
+      return;
+    }
+
+    const email = form.email.trim();
+    const password = form.password;
+    const name = email.includes("@") ? email.split("@")[0] : email;
+
+    try {
+      setLoading(true);
+      setError("");
+
+      const data = await api("/auth/signup", {
+        method: "POST",
+        body: {
+          name,
+          email,
+          password,
+          password_confirmation: password,
+          dob: form.dob,
+          interest: form.interest,
+        },
+      });
+
+      setToken(data.token);
+      localStorage.setItem("cinecrick_user", JSON.stringify(data.user));
+      localStorage.setItem("cinecrick_logged_in", "true");
+
+      navigate("/home", { replace: true });
+    } catch (err) {
+      setError(err.message || "Signup failed");
+    } finally {
+      setLoading(false);
+    }
   }
-
-  const email = form.email.trim();
-  const password = form.password;
-  const name = email.includes("@") ? email.split("@")[0] : email;
-
-  try {
-    setLoading(true);
-    setError("");
-
-    const data = await api("/auth/signup", {
-      method: "POST",
-      body: {
-        name,
-        email,
-        password,
-        password_confirmation: password,
-        dob: form.dob,
-        interest: form.interest,
-      },
-    });
-
-    setToken(data.token);
-    localStorage.setItem("cinecrick_user", JSON.stringify(data.user));
-    localStorage.setItem("cinecrick_logged_in", "true");
-
-    navigate("/home", { replace: true });
-  } catch (err) {
-    setError(err.message || "Signup failed");
-  } finally {
-    setLoading(false);
-  }
-}
 
   return (
     <div className="relative min-h-screen overflow-hidden text-white">
@@ -107,11 +107,12 @@ export default function Signup() {
                 + Cricket <Trophy size={14} className="inline mx-1" /> in one place
               </p>
             </div>
-              {error && (
-  <p className="rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
-    {error}
-  </p>
-)}
+
+            {error && (
+              <p className="rounded-md border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+                {error}
+              </p>
+            )}
 
             <form onSubmit={handleSubmit} className="space-y-5">
               <Input
@@ -134,7 +135,6 @@ export default function Signup() {
                   className="bg-black/40 border-white/10 pr-10 focus-visible:ring-pink-500/40"
                   required
                 />
-
                 <button
                   type="button"
                   onClick={() => setShowPwd(!showPwd)}
@@ -162,7 +162,6 @@ export default function Signup() {
                 <SelectTrigger className="bg-black/40 border-white/10 focus:ring-pink-500/40">
                   <SelectValue placeholder="Select Interest" />
                 </SelectTrigger>
-
                 <SelectContent className="bg-black/95 backdrop-blur-xl border border-white/10 text-white rounded-xl shadow-2xl">
                   <SelectItem value="Cricket" className="focus:bg-pink-500 focus:text-white">
                     Cricket
@@ -176,12 +175,15 @@ export default function Signup() {
                 </SelectContent>
               </Select>
 
-             <Button
-  disabled={loading}
-  className="w-full h-11 bg-gradient-to-r from-pink-500 to-rose-400 font-semibold hover:scale-[1.02] transition-all duration-300 shadow-lg disabled:opacity-60"
->
-  {loading ? "Creating account..." : "Get Started →"}
-</Button>
+              {/* ✅ FIXED: added type="submit" */}
+              <Button
+                type="submit"
+                disabled={loading}
+                className="w-full h-11 bg-gradient-to-r from-pink-500 to-rose-400 font-semibold hover:scale-[1.02] transition-all duration-300 shadow-lg disabled:opacity-60"
+              >
+                {loading ? "Creating account..." : "Get Started →"}
+              </Button>
+
               <p className="text-sm text-white/70 text-center mt-4">
                 Already have an account?{" "}
                 <Link
@@ -200,7 +202,6 @@ export default function Signup() {
         </Card>
       </div>
 
-      {/* ANIMATIONS */}
       <style>
         {`
           @keyframes slowZoom {

@@ -1,5 +1,5 @@
 const API_URL = import.meta.env.VITE_API_URL;
-console.log("API URL:", API_URL);
+
 // -----------------------------
 // Token helpers
 // -----------------------------
@@ -22,7 +22,7 @@ export function clearToken() {
 // -----------------------------
 export async function api(
   path,
-  { method = "GET", body = null, auth = false } = {}
+  { method = "GET", body = null } = {}
 ) {
   if (!API_URL) {
     throw new Error("VITE_API_URL is not defined in environment variables");
@@ -32,12 +32,10 @@ export async function api(
     "Content-Type": "application/json",
   };
 
-  // Attach JWT token if required
-  if (auth) {
-    const token = getToken();
-    if (token) {
-      headers.Authorization = `Bearer ${token}`;
-    }
+  // Auto-attach token if present
+  const token = getToken();
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
   }
 
   const res = await fetch(`${API_URL}${path}`, {
@@ -48,25 +46,19 @@ export async function api(
 
   const data = await res.json().catch(() => ({}));
 
-  // -----------------------------
   // Auto logout if token expired
-  // -----------------------------
   if (res.status === 401) {
     clearToken();
     window.location.href = "/";
     throw new Error("Session expired. Please login again.");
   }
 
-  // -----------------------------
-  // Handle other API errors
-  // -----------------------------
   if (!res.ok) {
     const msg =
       data?.error ||
       (Array.isArray(data?.errors)
         ? data.errors.join(", ")
         : "Request failed");
-
     throw new Error(msg);
   }
 

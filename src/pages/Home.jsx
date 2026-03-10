@@ -1,15 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { api, clearToken, getToken } from "../lib/api";
 import {
-  Zap,
-  Compass,
-  Lock,
-  Film as FilmIcon,
-  Trophy,
-  ChevronDown,
-  Search,
-  LogOut,
+  Zap, Compass, Lock, Film as FilmIcon, Trophy,
+  ChevronDown, Search, LogOut,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -17,33 +11,19 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
-
 import {
-  NavigationMenu,
-  NavigationMenuItem,
-  NavigationMenuList,
+  NavigationMenu, NavigationMenuItem, NavigationMenuList,
 } from "@/components/ui/navigation-menu";
-
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuTrigger,
+  DropdownMenu, DropdownMenuContent, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-
 import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
+  Command, CommandEmpty, CommandGroup, CommandInput,
+  CommandItem, CommandList,
 } from "@/components/ui/command";
 
 export default function Home() {
   const navigate = useNavigate();
-
-  const token = getToken();
-  if (!token) return <Navigate to="/" replace />;
 
   const [user, setUser] = useState(null);
   const [loadingUser, setLoadingUser] = useState(true);
@@ -53,10 +33,11 @@ export default function Home() {
 
     async function loadUser(retry = 0) {
       try {
-        const data = await api("/me", { auth: true });
-
+        const data = await api("/me");
         if (!cancelled) {
           setUser(data.user);
+          // Keep localStorage in sync with latest user data
+          localStorage.setItem("cinecrick_user", JSON.stringify(data.user));
           setLoadingUser(false);
         }
       } catch (err) {
@@ -64,7 +45,6 @@ export default function Home() {
           setTimeout(() => loadUser(retry + 1), 3000);
           return;
         }
-
         if (!cancelled) {
           clearToken();
           setLoadingUser(false);
@@ -74,10 +54,7 @@ export default function Home() {
     }
 
     loadUser();
-
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [navigate]);
 
   function logout() {
@@ -86,116 +63,51 @@ export default function Home() {
   }
 
   function handleMenuPick(category, item) {
-    if (category === "Account" && item === "Logout") {
-      logout();
-      return;
-    }
-
-    if (item === "Grounds" || item === "Ground Booking") {
-      navigate("/grounds");
-      return;
-    }
-
-    if (item === "My Bookings") {
-      navigate("/my-bookings");
-      return;
-    }
-
-    if (item === "Admin Grounds") {
-      navigate("/admin/grounds");
-      return;
-    }
-
+    if (category === "Account" && item === "Logout") { logout(); return; }
+    if (item === "Grounds" || item === "Ground Booking") { navigate("/grounds"); return; }
+    if (item === "My Bookings") { navigate("/my-bookings"); return; }
+    if (item === "Admin Grounds") { navigate("/admin/grounds"); return; }
     alert(`${category} → ${item}`);
   }
 
-  const MENUS = useMemo(
-    () => ({
-      Movies: [
-        "Now Showing",
-        "Upcoming",
-        "Top Rated",
-        "Genres",
-        "Offers",
-        "Near Me",
-        "Trailers",
-        "Reviews",
-      ],
-      Cricket: [
-        "Grounds",
-        "Live Matches",
-        "Scores",
-        "Schedule",
-        "Teams",
-        "Highlights",
-        "Rankings",
-        "Stats",
-      ],
-      Bookings: [
-        "Ground Booking",
-        "My Bookings",
-        "Cancel Booking",
-        "Refund Status",
-        "Payment Help",
-        "Support",
-        "Offers",
-      ],
-      News: [
-        "Sports News",
-        "Film News",
-        "Trending",
-        "Match Reports",
-        "Box Office",
-        "Interviews",
-        "Reviews",
-        "Rumours",
-      ],
-      Events: [
-        "Concerts",
-        "Standup",
-        "Theatre",
-        "Festivals",
-        "Kids",
-        "Workshops",
-        "Online",
-        "Nearby",
-      ],
-      Account: [
-        "Profile",
-        "Admin Grounds",
-        "My Bookings",
-        "Settings",
-        "Logout",
-      ],
-    }),
-    []
-  );
+  const MENUS = useMemo(() => {
+    const base = {
+      Movies: ["Now Showing", "Upcoming", "Top Rated", "Genres", "Offers", "Near Me", "Trailers", "Reviews"],
+      Cricket: ["Grounds", "Live Matches", "Scores", "Schedule", "Teams", "Highlights", "Rankings", "Stats"],
+      Bookings: ["Ground Booking", "My Bookings", "Cancel Booking", "Refund Status", "Payment Help", "Support", "Offers"],
+      News: ["Sports News", "Film News", "Trending", "Match Reports", "Box Office", "Interviews", "Reviews", "Rumours"],
+      Events: ["Concerts", "Standup", "Theatre", "Festivals", "Kids", "Workshops", "Online", "Nearby"],
+      Account: ["Profile", "My Bookings", "Settings", "Logout"],
+    };
 
-  const menuKeys = Object.keys(MENUS);
+    // Only show Admin Grounds if user is admin
+    if (user?.role === "admin") {
+      base.Account = ["Profile", "Admin Grounds", "My Bookings", "Settings", "Logout"];
+    }
 
-  const slides = useMemo(
-    () => [
-      {
-        title: "Book Cricket Grounds Instantly",
-        subtitle: "Check slots, compare prices, and confirm bookings in minutes",
-        img: "https://images.unsplash.com/photo-1593341646782-e0b495cff86d?auto=format&fit=crop&w=1800&q=80",
-        tag: "Cricket",
-      },
-      {
-        title: "Track Available Time Slots",
-        subtitle: "Morning, evening, and premium hours with live slot status",
-        img: "https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?auto=format&fit=crop&w=1800&q=80",
-        tag: "Booking",
-      },
-      {
-        title: "Manage Your Bookings Easily",
-        subtitle: "View booked slots, prices, and booking history in one place",
-        img: "https://images.unsplash.com/photo-1517602302552-471fe67acf66?auto=format&fit=crop&w=1800&q=80",
-        tag: "My Bookings",
-      },
-    ],
-    []
-  );
+    return base;
+  }, [user]);
+
+  const slides = useMemo(() => [
+    {
+      title: "Book Cricket Grounds Instantly",
+      subtitle: "Check slots, compare prices, and confirm bookings in minutes",
+      img: "https://images.unsplash.com/photo-1593341646782-e0b495cff86d?auto=format&fit=crop&w=1800&q=80",
+      tag: "Cricket",
+    },
+    {
+      title: "Track Available Time Slots",
+      subtitle: "Morning, evening, and premium hours with live slot status",
+      img: "https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?auto=format&fit=crop&w=1800&q=80",
+      tag: "Booking",
+    },
+    {
+      title: "Manage Your Bookings Easily",
+      subtitle: "View booked slots, prices, and booking history in one place",
+      img: "https://images.unsplash.com/photo-1517602302552-471fe67acf66?auto=format&fit=crop&w=1800&q=80",
+      tag: "My Bookings",
+    },
+  ], []);
 
   const [slide, setSlide] = useState(0);
 
@@ -212,7 +124,7 @@ export default function Home() {
     );
   }
 
-  if (!user) return <Navigate to="/" replace />;
+  if (!user) return null;
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#070812] text-white">
@@ -250,13 +162,16 @@ export default function Home() {
               <span className="max-w-[38vw] truncate text-sm text-white/80">
                 {user.email || "—"}
               </span>
-
+              {user.role === "admin" && (
+                <span className="rounded-full bg-pink-500/20 border border-pink-500/30 px-2 py-0.5 text-xs text-pink-300 font-semibold">
+                  Admin
+                </span>
+              )}
               <Avatar className="h-8 w-8">
                 <AvatarFallback className="bg-white/10 text-white/90">
                   {String(user.email || "U")[0]?.toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-
               <Button
                 onClick={logout}
                 size="sm"
@@ -271,7 +186,7 @@ export default function Home() {
           <div className="mt-4">
             <NavigationMenu>
               <NavigationMenuList className="flex flex-wrap gap-2">
-                {menuKeys.map((k) => (
+                {Object.keys(MENUS).map((k) => (
                   <NavigationMenuItem key={k}>
                     <MenuDropdown
                       label={k}
@@ -298,16 +213,12 @@ export default function Home() {
               <Badge className="bg-pink-500/15 text-pink-200 border border-pink-500/25">
                 {slides[slide].tag}
               </Badge>
-
               <div className="mt-3 max-w-2xl">
                 <h1 className="text-5xl font-black leading-tight drop-shadow">
                   {slides[slide].title}
                 </h1>
-                <p className="mt-2 text-white/80 text-lg">
-                  {slides[slide].subtitle}
-                </p>
+                <p className="mt-2 text-white/80 text-lg">{slides[slide].subtitle}</p>
               </div>
-
               <div className="mt-5 flex flex-wrap gap-3">
                 <Button
                   onClick={() => navigate("/grounds")}
@@ -340,23 +251,15 @@ export default function Home() {
 
               <button
                 type="button"
-                onClick={() =>
-                  setSlide((s) => (s - 1 + slides.length) % slides.length)
-                }
+                onClick={() => setSlide((s) => (s - 1 + slides.length) % slides.length)}
                 className="absolute left-4 top-1/2 -translate-y-1/2 grid h-11 w-11 place-items-center rounded-full border border-white/10 bg-black/40 text-2xl hover:bg-black/60"
-                aria-label="Previous slide"
-              >
-                ‹
-              </button>
+              >‹</button>
 
               <button
                 type="button"
                 onClick={() => setSlide((s) => (s + 1) % slides.length)}
                 className="absolute right-4 top-1/2 -translate-y-1/2 grid h-11 w-11 place-items-center rounded-full border border-white/10 bg-black/40 text-2xl hover:bg-black/60"
-                aria-label="Next slide"
-              >
-                ›
-              </button>
+              >›</button>
             </div>
           </CardContent>
         </Card>
@@ -370,24 +273,13 @@ export default function Home() {
               <b>events</b>. Discover trending content, check schedules, and manage
               bookings with a premium experience.
             </p>
-
             <div className="mt-4 space-y-1 text-sm text-white">
-              <p>
-                <span className="font-semibold text-pink-400">Email:</span>{" "}
-                {user.email || "—"}
-              </p>
-              <p>
-                <span className="font-semibold text-pink-400">DOB:</span>{" "}
-                {user.dob || "Not provided"}
-              </p>
-              <p>
-                <span className="font-semibold text-pink-400">Interest:</span>{" "}
-                {user.interest || "Not selected"}
-              </p>
+              <p><span className="font-semibold text-pink-400">Email:</span> {user.email || "—"}</p>
+              <p><span className="font-semibold text-pink-400">DOB:</span> {user.dob || "Not provided"}</p>
+              <p><span className="font-semibold text-pink-400">Interest:</span> {user.interest || "Not selected"}</p>
+              <p><span className="font-semibold text-pink-400">Role:</span> {user.role || "user"}</p>
             </div>
-
             <Separator className="my-5 bg-white/10" />
-
             <div className="flex items-center gap-2 text-white/70 text-sm">
               <FilmIcon className="h-4 w-4" /> Movies
               <span className="mx-1">•</span>
@@ -399,26 +291,10 @@ export default function Home() {
 
           <DarkCard title="Why CineCrick">
             <div className="mt-2 grid gap-3 sm:grid-cols-2">
-              <Pro
-                icon={<Zap className="h-6 w-6" />}
-                title="Fast booking"
-                desc="Quick flow from selection to confirmation."
-              />
-              <Pro
-                icon={<Compass className="h-6 w-6" />}
-                title="Smart navigation"
-                desc="Dropdown menus with search + scrollable options."
-              />
-              <Pro
-                icon={<Lock className="h-6 w-6" />}
-                title="Protected pages"
-                desc="Home opens only after signup."
-              />
-              <Pro
-                icon={<FilmIcon className="h-6 w-6" />}
-                title="Entertainment hub"
-                desc="Movies + cricket + events in one dashboard."
-              />
+              <Pro icon={<Zap className="h-6 w-6" />} title="Fast booking" desc="Quick flow from selection to confirmation." />
+              <Pro icon={<Compass className="h-6 w-6" />} title="Smart navigation" desc="Dropdown menus with search + scrollable options." />
+              <Pro icon={<Lock className="h-6 w-6" />} title="Protected pages" desc="Home opens only after signup." />
+              <Pro icon={<FilmIcon className="h-6 w-6" />} title="Entertainment hub" desc="Movies + cricket + events in one dashboard." />
             </div>
           </DarkCard>
         </div>
@@ -434,32 +310,10 @@ export default function Home() {
               Your one-stop destination for movies, cricket, events, and bookings.
             </p>
           </div>
-
-          <FooterCol
-            title="Quick Links"
-            items={["Home", "Movies", "Cricket", "Bookings", "News"]}
-          />
-          <FooterCol
-            title="Services"
-            items={[
-              "Movie Tickets",
-              "Ground Booking",
-              "Live Scores",
-              "Event Booking",
-              "Offers",
-            ]}
-          />
-          <FooterCol
-            title="Support"
-            items={[
-              "Help Center",
-              "Privacy Policy",
-              "Terms",
-              "Contact Us",
-            ]}
-          />
+          <FooterCol title="Quick Links" items={["Home", "Movies", "Cricket", "Bookings", "News"]} />
+          <FooterCol title="Services" items={["Movie Tickets", "Ground Booking", "Live Scores", "Event Booking", "Offers"]} />
+          <FooterCol title="Support" items={["Help Center", "Privacy Policy", "Terms", "Contact Us"]} />
         </div>
-
         <div className="border-t border-pink-500/20 py-4 text-center text-xs text-white/55">
           © {new Date().getFullYear()} CineCrick. All rights reserved.
         </div>
@@ -470,49 +324,27 @@ export default function Home() {
 
 function MenuDropdown({ label, items, onPick }) {
   const inputRef = useRef(null);
-
   return (
-    <DropdownMenu
-      onOpenChange={(open) =>
-        open && setTimeout(() => inputRef.current?.focus(), 0)
-      }
-    >
+    <DropdownMenu onOpenChange={(open) => open && setTimeout(() => inputRef.current?.focus(), 0)}>
       <DropdownMenuTrigger asChild>
         <Button className="rounded-xl border border-white/10 bg-white/5 text-white hover:bg-white/10">
           {label}
           <ChevronDown className="ml-2 h-4 w-4 opacity-80" />
         </Button>
       </DropdownMenuTrigger>
-
-      <DropdownMenuContent
-        align="start"
-        className="w-80 rounded-2xl border-white/10 bg-zinc-950/95 text-white shadow-2xl backdrop-blur-xl"
-      >
+      <DropdownMenuContent align="start" className="w-80 rounded-2xl border-white/10 bg-zinc-950/95 text-white shadow-2xl backdrop-blur-xl">
         <Command className="bg-transparent text-white">
           <div className="px-3 pt-3">
             <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3">
               <Search className="h-4 w-4 text-white/60" />
-              <CommandInput
-                ref={inputRef}
-                placeholder={`Search in ${label}...`}
-                className="text-white placeholder:text-white/45"
-              />
+              <CommandInput ref={inputRef} placeholder={`Search in ${label}...`} className="text-white placeholder:text-white/45" />
             </div>
           </div>
-
           <CommandList className="max-h-64">
-            <CommandEmpty className="py-6 text-center text-sm text-white/60">
-              No results found.
-            </CommandEmpty>
-
+            <CommandEmpty className="py-6 text-center text-sm text-white/60">No results found.</CommandEmpty>
             <CommandGroup heading={label} className="text-white/70">
               {items.map((it) => (
-                <CommandItem
-                  key={it}
-                  value={it}
-                  onSelect={() => onPick(it)}
-                  className="cursor-pointer aria-selected:bg-pink-500/20 aria-selected:text-white"
-                >
+                <CommandItem key={it} value={it} onSelect={() => onPick(it)} className="cursor-pointer aria-selected:bg-pink-500/20 aria-selected:text-white">
                   {it}
                 </CommandItem>
               ))}
@@ -555,10 +387,7 @@ function FooterCol({ title, items }) {
       <div className="font-bold text-white">{title}</div>
       <ul className="mt-3 space-y-2 text-sm text-white/70">
         {items.map((x) => (
-          <li
-            key={x}
-            className="cursor-pointer hover:text-pink-400 hover:translate-x-1 transition-all duration-200"
-          >
+          <li key={x} className="cursor-pointer hover:text-pink-400 hover:translate-x-1 transition-all duration-200">
             {x}
           </li>
         ))}

@@ -8,6 +8,7 @@ import MyBookings from "./pages/MyBookings";
 import AdminGrounds from "./pages/AdminGrounds";
 import AdminSlots from "./pages/AdminSlots";
 import PrivateRoute from "./components/PrivateRoute";
+import AdminRoute from "./components/AdminRoute";
 
 export default function App() {
   return (
@@ -58,21 +59,23 @@ export default function App() {
         }
       />
 
-      {/* Admin grounds */}
+      {/* Admin grounds — admin only */}
       <Route
         path="/admin/grounds"
         element={
-          <PrivateRoute>
+          <AdminRoute>
             <AdminGrounds />
-          </PrivateRoute>
+          </AdminRoute>
         }
       />
+
+      {/* Admin slots — admin only */}
       <Route
         path="/admin/slots"
         element={
-          <PrivateRoute>
+          <AdminRoute>
             <AdminSlots />
-          </PrivateRoute>
+          </AdminRoute>
         }
       />
 
