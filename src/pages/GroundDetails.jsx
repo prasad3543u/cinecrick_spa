@@ -264,16 +264,28 @@ Please confirm availability.`;
         </label>
       </div>
 
-      {selectedSession && (
-        <Card className="bg-zinc-900 border border-white/10 mb-8">
-          <CardContent className="p-5">
-            <h3 className="text-xl font-bold mb-2 text-pink-400">Selected Session</h3>
-            <p className="text-white/80">{selectedSession.start_time} - {selectedSession.end_time}</p>
-            <p className="text-white/70">Date: {selectedSession.slot_date}</p>
-            <p className="text-white/70">₹{selectedSession.price}</p>
-          </CardContent>
-        </Card>
-      )}
+       {selectedSession && (
+  <Card className="bg-zinc-900 border border-white/10 mb-8">
+    <CardContent className="p-5">
+      <h3 className="text-xl font-bold mb-2 text-pink-400">Selected Session</h3>
+      <p className="text-white/80">{selectedSession.start_time} - {selectedSession.end_time}</p>
+      <p className="text-white/70">Date: {selectedSession.slot_date}</p>
+      <p className="text-white/70">
+        Price: ₹{matchType === "without_opponents"
+          ? selectedSession.price * 2
+          : selectedSession.price}
+        {matchType === "without_opponents" && (
+          <span className="ml-2 text-xs text-yellow-400">(Full ground — 2x price)</span>
+        )}
+      </p>
+      <p className="text-white/60 text-xs mt-1">
+        {matchType === "without_opponents"
+          ? "You are booking the entire ground for yourself."
+          : "You are booking one team slot. Another team can join."}
+      </p>
+    </CardContent>
+  </Card>
+)}
 
       <Button
         onClick={handleWhatsAppBooking}
