@@ -68,27 +68,24 @@ export default function Home() {
     if (item === "My Bookings") { navigate("/my-bookings"); return; }
     if (item === "Admin Grounds") { navigate("/admin/grounds"); return; }
     if (item === "Admin Bookings") { navigate("/admin/bookings"); return; }
-
+    if (item === "Admin Dashboard") { navigate("/admin/dashboard"); return; }   
+    if (item === "Profile") { navigate("/profile"); return; } 
     alert(`${category} → ${item}`);
   }
+   const MENUS = useMemo(() => {
+  const base = {
+    Movies: ["Now Showing", "Upcoming", "Top Rated", "Genres", "Offers", "Near Me", "Trailers", "Reviews"],
+    Cricket: ["Grounds", "Live Matches", "Scores", "Schedule", "Teams", "Highlights", "Rankings", "Stats"],
+    Bookings: ["Ground Booking", "My Bookings", "Cancel Booking", "Refund Status", "Payment Help", "Support", "Offers"],
+    News: ["Sports News", "Film News", "Trending", "Match Reports", "Box Office", "Interviews", "Reviews", "Rumours"],
+    Events: ["Concerts", "Standup", "Theatre", "Festivals", "Kids", "Workshops", "Online", "Nearby"],
+    Account: user?.role === "admin"
+      ? ["Profile", "Admin Dashboard", "Admin Grounds", "Admin Bookings", "My Bookings", "Settings", "Logout"]
+      : ["Profile", "My Bookings", "Settings", "Logout"],
+  };
 
-  const MENUS = useMemo(() => {
-    const base = {
-      Movies: ["Now Showing", "Upcoming", "Top Rated", "Genres", "Offers", "Near Me", "Trailers", "Reviews"],
-      Cricket: ["Grounds", "Live Matches", "Scores", "Schedule", "Teams", "Highlights", "Rankings", "Stats"],
-      Bookings: ["Ground Booking", "My Bookings", "Cancel Booking", "Refund Status", "Payment Help", "Support", "Offers"],
-      News: ["Sports News", "Film News", "Trending", "Match Reports", "Box Office", "Interviews", "Reviews", "Rumours"],
-      Events: ["Concerts", "Standup", "Theatre", "Festivals", "Kids", "Workshops", "Online", "Nearby"],
-      Account: ["Profile", "My Bookings", "Settings", "Logout"],
-    };
-
-    // Only show Admin Grounds if user is admin
-    if (user?.role === "admin") {
-      base.Account = ["Profile", "Admin Grounds", "Admin Bookings", "My Bookings", "Settings", "Logout"];
-    }
-
-    return base;
-  }, [user]);
+  return base;
+}, [user]);
 
   const slides = useMemo(() => [
     {
