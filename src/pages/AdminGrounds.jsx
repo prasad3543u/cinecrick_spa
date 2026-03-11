@@ -5,7 +5,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-
 import {
   Dialog, DialogContent, DialogHeader,
   DialogTitle, DialogFooter
@@ -23,15 +22,11 @@ export default function AdminGrounds() {
   const [grounds, setGrounds] = useState([]);
   const [loading, setLoading] = useState(false);
   const [loadingGrounds, setLoadingGrounds] = useState(true);
-  const [message, setMessage] = useState("");
-  const [error, setError] = useState("");
 
-  // Edit state
   const [editGround, setEditGround] = useState(null);
   const [editForm, setEditForm] = useState({});
   const [editLoading, setEditLoading] = useState(false);
 
-  // Block date state
   const [blockGroundId, setBlockGroundId] = useState(null);
   const [blockDate, setBlockDate] = useState("");
   const [blockLoading, setBlockLoading] = useState(false);
@@ -47,7 +42,7 @@ export default function AdminGrounds() {
       const data = await api("/grounds");
       setGrounds(Array.isArray(data) ? data : []);
     } catch (err) {
-      toast.error(err.message || "Failed to load grounds");
+      toast.error(err?.message || "Failed to load grounds");
     } finally {
       setLoadingGrounds(false);
     }
@@ -74,11 +69,9 @@ export default function AdminGrounds() {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    toast.info("Adding ground...");
-    toast.error("");
-
     try {
       setLoading(true);
+      toast.info("Adding ground...");
       await api("/grounds", {
         method: "POST",
         body: {
@@ -94,8 +87,7 @@ export default function AdminGrounds() {
           admin_phone: form.admin_phone.trim(),
         },
       });
-
-      toast.success("Ground added successfully.");
+      toast.success("Ground added successfully!");
       setForm({
         name: "", location: "", sport_type: "Cricket",
         price_per_hour: "", opening_time: "", closing_time: "",
@@ -103,7 +95,7 @@ export default function AdminGrounds() {
       });
       await loadGrounds();
     } catch (err) {
-      toast.error(err.message || "Failed to add ground");
+      toast.error(err?.message || "Failed to add ground");
     } finally {
       setLoading(false);
     }
@@ -128,17 +120,16 @@ export default function AdminGrounds() {
   async function handleEditSubmit() {
     try {
       setEditLoading(true);
-      toast.success("Updating ground...");
-      toast.error("");
+      toast.info("Updating ground...");
       await api(`/grounds/${editGround.id}`, {
         method: "PATCH",
         body: editForm,
       });
-      toast.success("Ground updated successfully.");
+      toast.success("Ground updated successfully!");
       setEditGround(null);
       await loadGrounds();
     } catch (err) {
-      toast.error(err.message || "Failed to update ground");
+      toast.error(err?.message || "Failed to update ground");
     } finally {
       setEditLoading(false);
     }
@@ -147,15 +138,13 @@ export default function AdminGrounds() {
   async function handleDelete(groundId) {
     const confirmed = window.confirm("Are you sure you want to delete this ground? All slots and bookings will be deleted too.");
     if (!confirmed) return;
-
     try {
       toast.info("Deleting ground...");
-      toast.error("");
       await api(`/grounds/${groundId}`, { method: "DELETE" });
-      toast.success("Ground deleted successfully.");
+      toast.success("Ground deleted successfully!");
       await loadGrounds();
     } catch (err) {
-      toast.error(err.message || "Failed to delete ground");
+      toast.error(err?.message || "Failed to delete ground");
     }
   }
 
@@ -164,20 +153,18 @@ export default function AdminGrounds() {
       toast.error("Please select a date to block.");
       return;
     }
-
     try {
       setBlockLoading(true);
       toast.info("Blocking date...");
-      toast.error("");
       await api("/admin/block_date", {
         method: "POST",
         body: { ground_id: groundId, date: blockDate },
       });
-      toast.success(`Date ${blockDate} blocked successfully.`);
+      toast.success(`Date ${blockDate} blocked successfully!`);
       setBlockDate("");
       await loadBlockedDates(groundId);
     } catch (err) {
-      toast.error(err.message || "Failed to block date");
+      toast.error(err?.message || "Failed to block date");
     } finally {
       setBlockLoading(false);
     }
@@ -186,15 +173,14 @@ export default function AdminGrounds() {
   async function handleUnblockDate(groundId, date) {
     try {
       toast.info("Unblocking date...");
-      toast.error("");
       await api("/admin/unblock_date", {
         method: "DELETE",
         body: { ground_id: groundId, date: date },
       });
-      toast.success(`Date ${date} unblocked successfully.`);
+      toast.success(`Date ${date} unblocked successfully!`);
       await loadBlockedDates(groundId);
     } catch (err) {
-      toast.error(err.message || "Failed to unblock date");
+      toast.error(err?.message || "Failed to unblock date");
     }
   }
 
@@ -207,22 +193,10 @@ export default function AdminGrounds() {
             Dashboard
           </Button>
           <Button onClick={() => navigate("/grounds")} className="bg-white/10 text-white hover:bg-white/15">
-            View User Grounds
+            View Grounds
           </Button>
         </div>
       </div>
-
-      {message && (
-        <div className="mb-4 rounded-xl border border-green-500/30 bg-green-500/10 px-4 py-3 text-green-300">
-          {message}
-        </div>
-      )}
-
-      {error && (
-        <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-red-300">
-          {error}
-        </div>
-      )}
 
       <div className="grid gap-8 lg:grid-cols-2">
         {/* Add Ground Form */}
@@ -269,27 +243,14 @@ export default function AdminGrounds() {
                       <p className="text-white/70 text-sm">WhatsApp: {ground.admin_phone || "Not set"}</p>
                     </div>
 
-                    {/* Action Buttons */}
                     <div className="flex flex-wrap gap-2">
-                      <Button
-                        type="button"
-                        onClick={() => openEdit(ground)}
-                        className="bg-violet-500/20 border border-violet-500/30 text-violet-300 hover:bg-violet-500/30"
-                      >
+                      <Button type="button" onClick={() => openEdit(ground)} className="bg-violet-500/20 border border-violet-500/30 text-violet-300 hover:bg-violet-500/30">
                         Edit
                       </Button>
-                      <Button
-                        type="button"
-                        onClick={() => handleDelete(ground.id)}
-                        className="bg-red-500/20 border border-red-500/30 text-red-300 hover:bg-red-500/30"
-                      >
+                      <Button type="button" onClick={() => handleDelete(ground.id)} className="bg-red-500/20 border border-red-500/30 text-red-300 hover:bg-red-500/30">
                         Delete
                       </Button>
-                      <Button
-                        type="button"
-                        onClick={() => navigate("/admin/slots")}
-                        className="bg-white/10 text-white hover:bg-white/15"
-                      >
+                      <Button type="button" onClick={() => navigate("/admin/slots")} className="bg-white/10 text-white hover:bg-white/15">
                         Manage Slots
                       </Button>
                     </div>
@@ -320,7 +281,6 @@ export default function AdminGrounds() {
                         </Button>
                       </div>
 
-                      {/* Show blocked dates for this ground */}
                       <button
                         type="button"
                         onClick={() => loadBlockedDates(ground.id)}
@@ -362,7 +322,6 @@ export default function AdminGrounds() {
           <DialogHeader>
             <DialogTitle className="text-pink-400">Edit Ground</DialogTitle>
           </DialogHeader>
-
           <div className="space-y-3">
             <Input name="name" placeholder="Ground Name" value={editForm.name || ""} onChange={handleEditChange} className="bg-black/40 border-white/10" />
             <Input name="location" placeholder="Location" value={editForm.location || ""} onChange={handleEditChange} className="bg-black/40 border-white/10" />
@@ -375,7 +334,6 @@ export default function AdminGrounds() {
             <Input name="admin_name" placeholder="Ground Owner Name" value={editForm.admin_name || ""} onChange={handleEditChange} className="bg-black/40 border-white/10" />
             <Input name="admin_phone" placeholder="WhatsApp Number" value={editForm.admin_phone || ""} onChange={handleEditChange} className="bg-black/40 border-white/10" />
           </div>
-
           <DialogFooter className="gap-2">
             <Button variant="secondary" onClick={() => setEditGround(null)} className="bg-white/10 text-white hover:bg-white/15">
               Cancel
