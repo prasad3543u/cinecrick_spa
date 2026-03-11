@@ -3,6 +3,7 @@ import { api } from "../lib/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner"; 
 
 export default function AdminSlots() {
   const [slots, setSlots] = useState([]);
@@ -20,7 +21,7 @@ export default function AdminSlots() {
       const data = await api("/slots");
       setSlots(Array.isArray(data) ? data : []);
     } catch (err) {
-      setError(err.message || "Failed to load slots");
+      toast.error(err.message || "Failed to load slots");
     } finally {
       setLoading(false);
     }
@@ -28,8 +29,8 @@ export default function AdminSlots() {
 
   async function handleUpdate(slot) {
     try {
-      setMessage("");
-      setError("");
+      toast.success("Updating slot...");
+      toast.error("");
       await api(`/slots/${slot.id}`, {
         method: "PATCH",
         body: {
@@ -42,10 +43,10 @@ export default function AdminSlots() {
           teams_booked_count: slot.teams_booked_count,
         },
       });
-      setMessage("Slot updated successfully.");
+      toast.success("Slot updated successfully.");
       loadSlots();
     } catch (err) {
-      setError(err.message || "Failed to update slot");
+      toast.error(err.message || "Failed to update slot");
     }
   }
 
@@ -54,13 +55,13 @@ export default function AdminSlots() {
     if (!confirmed) return;
 
     try {
-      setMessage("");
-      setError("");
+      toast.info("Deleting slot...");
+      toast.error("");
       await api(`/slots/${id}`, { method: "DELETE" });
-      setMessage("Slot deleted successfully.");
+      toast.success("Slot deleted successfully.");
       loadSlots();
     } catch (err) {
-      setError(err.message || "Failed to delete slot");
+      toast.error(err.message || "Failed to delete slot");
     }
   }
 

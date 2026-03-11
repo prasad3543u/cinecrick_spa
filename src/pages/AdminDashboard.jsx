@@ -3,6 +3,8 @@ import { useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+
 import {
   Users, BookOpen, MapPin, TrendingUp,
   Clock, CheckCircle, XCircle, DollarSign
@@ -24,7 +26,7 @@ export default function AdminDashboard() {
       const data = await api("/admin/stats");
       setStats(data);
     } catch (err) {
-      setError(err.message || "Failed to load stats");
+      toast.error(err.message || "Failed to load stats");
     } finally {
       setLoading(false);
     }

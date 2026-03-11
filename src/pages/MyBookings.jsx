@@ -3,15 +3,17 @@ import { useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CheckCircle, Clock, XCircle, Circle } from "lucide-react";
+import { CheckCircle, Clock, XCircle, Calendar, MapPin, CreditCard } from "lucide-react";
 
 export default function MyBookings() {
   const navigate = useNavigate();
+
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [cancellingId, setCancellingId] = useState(null);
-  const [message, setMessage] = useState("");
+  const [cancelError, setCancelError] = useState("");
+  const [cancelSuccess, setCancelSuccess] = useState("");
 
   useEffect(() => {
     loadBookings();
@@ -32,19 +34,19 @@ export default function MyBookings() {
 
   async function handleCancel(bookingId) {
     const confirmed = window.confirm(
-      "Are you sure you want to cancel this booking?\n\nNote: No refund will be provided for cancellations."
+      "⚠️ Are you sure you want to cancel?\n\nNo refund will be provided on cancellation."
     );
     if (!confirmed) return;
 
     try {
       setCancellingId(bookingId);
-      setMessage("");
-      setError("");
+      setCancelError("");
+      setCancelSuccess("");
       await api(`/bookings/${bookingId}/cancel`, { method: "PATCH" });
-      setMessage("Booking cancelled successfully. No refund will be processed.");
+      setCancelSuccess("Booking cancelled. No refund will be issued.");
       await loadBookings();
     } catch (err) {
-      setError(err.message || "Failed to cancel booking");
+      setCancelError(err.message || "Failed to cancel booking");
     } finally {
       setCancellingId(null);
     }
@@ -53,7 +55,7 @@ export default function MyBookings() {
   if (loading) {
     return (
       <div className="min-h-screen bg-[#070812] text-white flex items-center justify-center">
-        Loading bookings...
+        <div className="text-white/70">Loading bookings...</div>
       </div>
     );
   }
@@ -70,26 +72,32 @@ export default function MyBookings() {
         </Button>
       </div>
 
-      {message && (
-        <div className="mb-4 rounded-xl border border-green-500/30 bg-green-500/10 px-4 py-3 text-green-300">
-          {message}
-        </div>
-      )}
-
       {error && (
         <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-red-300">
           {error}
         </div>
       )}
 
+      {cancelSuccess && (
+        <div className="mb-4 rounded-xl border border-yellow-500/30 bg-yellow-500/10 px-4 py-3 text-yellow-300">
+          {cancelSuccess}
+        </div>
+      )}
+
+      {cancelError && (
+        <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-red-300">
+          {cancelError}
+        </div>
+      )}
+
       {bookings.length === 0 ? (
-        <div className="rounded-2xl border border-white/10 bg-zinc-950/55 p-8 text-center">
-          <p className="text-white/70 mb-4">No bookings found.</p>
+        <div className="rounded-2xl border border-white/10 bg-zinc-950/55 p-10 text-center">
+          <p className="text-white/50 text-lg">No bookings yet.</p>
           <Button
             onClick={() => navigate("/grounds")}
-            className="bg-gradient-to-r from-pink-500 to-violet-500"
+            className="mt-4 bg-gradient-to-r from-pink-500 to-violet-500"
           >
-            Book a Ground
+            Browse Grounds
           </Button>
         </div>
       ) : (
@@ -97,58 +105,126 @@ export default function MyBookings() {
           {bookings.map((booking) => (
             <Card
               key={booking.id}
-              className="border-white/10 bg-zinc-950/55 shadow-[0_20px_60px_rgba(0,0,0,.55)]"
+              className="border-white/10 bg-zinc-950/55 shadow-[0_20px_60px_rgba(0,0,0,.55)] overflow-hidden"
             >
+              {/* Status bar at top */}
+              <div className={`h-1 w-full ${
+                booking.status === "confirmed" ? "bg-gradient-to-r from-green-500 to-emerald-400" :
+                booking.status === "cancelled" ? "bg-gradient-to-r from-red-500 to-rose-400" :
+                "bg-gradient-to-r from-yellow-500 to-orange-400"
+              }`} />
+
               <CardContent className="p-6">
-                {/* Header */}
-                <div className="flex items-start justify-between mb-4">
+                <div className="flex flex-wrap items-start justify-between gap-4 mb-5">
                   <div>
                     <h2 className="text-2xl font-bold text-pink-400">
                       {booking.ground?.name || "Ground"}
                     </h2>
-                    <p className="text-white/60 text-sm">{booking.ground?.location || "--"}</p>
+                    <div className="flex items-center gap-1 text-white/60 text-sm mt-1">
+                      <MapPin className="h-3 w-3" />
+                      {booking.ground?.location || "--"}
+                    </div>
                   </div>
-                  <StatusBadge status={booking.status} />
+
+                  <span className={`px-3 py-1 rounded-full text-sm font-bold ${
+                    booking.status === "confirmed" ? "bg-green-500/20 text-green-300 border border-green-500/30" :
+                    booking.status === "cancelled" ? "bg-red-500/20 text-red-300 border border-red-500/30" :
+                    "bg-yellow-500/20 text-yellow-300 border border-yellow-500/30"
+                  }`}>
+                    {booking.status?.toUpperCase()}
+                  </span>
                 </div>
 
-                {/* Booking Details */}
-                <div className="grid grid-cols-2 gap-3 mb-6 text-sm">
-                  <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-                    <p className="text-white/50 text-xs mb-1">Date</p>
-                    <p className="text-white font-semibold">{booking.booking_date || "--"}</p>
+                {/* Booking details */}
+                <div className="grid sm:grid-cols-3 gap-3 mb-6">
+                  <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2">
+                    <Calendar className="h-4 w-4 text-pink-400" />
+                    <div>
+                      <p className="text-xs text-white/50">Date</p>
+                      <p className="text-sm font-semibold">{booking.booking_date || "--"}</p>
+                    </div>
                   </div>
-                  <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-                    <p className="text-white/50 text-xs mb-1">Time Slot</p>
-                    <p className="text-white font-semibold">
-                      {booking.slot?.start_time || "--"} - {booking.slot?.end_time || "--"}
-                    </p>
+
+                  <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2">
+                    <Clock className="h-4 w-4 text-violet-400" />
+                    <div>
+                      <p className="text-xs text-white/50">Slot</p>
+                      <p className="text-sm font-semibold">
+                        {booking.slot?.start_time || "--"} - {booking.slot?.end_time || "--"}
+                      </p>
+                    </div>
                   </div>
-                  <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-                    <p className="text-white/50 text-xs mb-1">Total Price</p>
-                    <p className="text-pink-400 font-bold">₹{booking.total_price || "--"}</p>
+
+                  <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2">
+                    <CreditCard className="h-4 w-4 text-emerald-400" />
+                    <div>
+                      <p className="text-xs text-white/50">Total Price</p>
+                      <p className="text-sm font-semibold">₹{booking.total_price || "--"}</p>
+                    </div>
                   </div>
-                  <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-                    <p className="text-white/50 text-xs mb-1">Match Type</p>
-                    <p className="text-white font-semibold capitalize">
-                      {booking.match_type?.replace("_", " ") || "--"}
-                    </p>
-                  </div>
+                </div>
+
+                <div className="mb-6 text-sm text-white/60 space-y-1">
+                  <p>Match Type: <span className="text-white/80">{booking.match_type || "--"}</span></p>
+                  <p>Payment: <span className="text-white/80">{booking.payment_status || "--"}</span></p>
                 </div>
 
                 {/* Timeline */}
-                <BookingTimeline status={booking.status} />
+                <div className="mb-5">
+                  <p className="text-xs text-white/40 uppercase tracking-widest mb-3">Booking Timeline</p>
+                  <div className="flex items-center gap-0">
 
-                {/* Cancellation Policy Note */}
+                    {/* Step 1 - Created */}
+                    <TimelineStep
+                      icon={<CheckCircle className="h-4 w-4" />}
+                      label="Created"
+                      active={true}
+                      color="pink"
+                    />
+
+                    <TimelineLine active={true} />
+
+                    {/* Step 2 - Pending */}
+                    <TimelineStep
+                      icon={<Clock className="h-4 w-4" />}
+                      label="Pending"
+                      active={["pending", "confirmed", "cancelled"].includes(booking.status)}
+                      color="yellow"
+                    />
+
+                    <TimelineLine
+                      active={["confirmed", "cancelled"].includes(booking.status)}
+                    />
+
+                    {/* Step 3 - Confirmed or Cancelled */}
+                    {booking.status === "cancelled" ? (
+                      <TimelineStep
+                        icon={<XCircle className="h-4 w-4" />}
+                        label="Cancelled"
+                        active={true}
+                        color="red"
+                      />
+                    ) : (
+                      <TimelineStep
+                        icon={<CheckCircle className="h-4 w-4" />}
+                        label="Confirmed"
+                        active={booking.status === "confirmed"}
+                        color="green"
+                      />
+                    )}
+                  </div>
+                </div>
+
+                {/* Cancel button — only when pending */}
                 {booking.status === "pending" && (
-                  <div className="mt-4 rounded-xl border border-yellow-500/20 bg-yellow-500/10 px-4 py-3">
-                    <p className="text-yellow-300 text-xs font-semibold mb-1">⚠️ Cancellation Policy</p>
-                    <p className="text-yellow-300/80 text-xs">
-                      You can cancel this booking while it's pending. Once confirmed by admin, cancellation is not allowed. No refund will be provided.
-                    </p>
+                  <div>
+                    <div className="mb-3 rounded-xl border border-yellow-500/20 bg-yellow-500/5 px-3 py-2 text-xs text-yellow-300">
+                      ⚠️ Once confirmed by admin, cancellation is not allowed. No refund on cancellation.
+                    </div>
                     <Button
                       onClick={() => handleCancel(booking.id)}
                       disabled={cancellingId === booking.id}
-                      className="mt-3 bg-red-500/20 border border-red-500/30 text-red-300 hover:bg-red-500/30 text-sm h-8"
+                      className="bg-red-500/20 border border-red-500/30 text-red-300 hover:bg-red-500/30"
                     >
                       {cancellingId === booking.id ? "Cancelling..." : "Cancel Booking"}
                     </Button>
@@ -156,18 +232,14 @@ export default function MyBookings() {
                 )}
 
                 {booking.status === "confirmed" && (
-                  <div className="mt-4 rounded-xl border border-white/10 bg-white/5 px-4 py-3">
-                    <p className="text-white/50 text-xs">
-                      🔒 This booking is confirmed. Cancellation is not allowed.
-                    </p>
+                  <div className="rounded-xl border border-green-500/20 bg-green-500/5 px-3 py-2 text-xs text-green-300">
+                    ✅ Booking confirmed. See you on the ground!
                   </div>
                 )}
 
                 {booking.status === "cancelled" && (
-                  <div className="mt-4 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3">
-                    <p className="text-red-300/80 text-xs">
-                      ❌ This booking was cancelled. No refund has been processed.
-                    </p>
+                  <div className="rounded-xl border border-red-500/20 bg-red-500/5 px-3 py-2 text-xs text-red-300">
+                    ❌ Booking cancelled. No refund issued.
                   </div>
                 )}
               </CardContent>
@@ -179,100 +251,28 @@ export default function MyBookings() {
   );
 }
 
-function BookingTimeline({ status }) {
-  const steps = [
-    { key: "created", label: "Booking Created" },
-    { key: "pending", label: "Pending Approval" },
-    { key: "confirmed", label: "Confirmed" },
-  ];
-
-  function getStepState(stepKey) {
-    if (status === "cancelled") {
-      if (stepKey === "created") return "done";
-      if (stepKey === "pending") return "cancelled";
-      return "inactive";
-    }
-    if (status === "pending") {
-      if (stepKey === "created") return "done";
-      if (stepKey === "pending") return "active";
-      return "inactive";
-    }
-    if (status === "confirmed") {
-      return "done";
-    }
-    return "inactive";
-  }
+function TimelineStep({ icon, label, active, color }) {
+  const colors = {
+    pink: active ? "bg-pink-500 border-pink-500 text-white" : "bg-white/5 border-white/10 text-white/30",
+    yellow: active ? "bg-yellow-500 border-yellow-500 text-black" : "bg-white/5 border-white/10 text-white/30",
+    green: active ? "bg-green-500 border-green-500 text-white" : "bg-white/5 border-white/10 text-white/30",
+    red: active ? "bg-red-500 border-red-500 text-white" : "bg-white/5 border-white/10 text-white/30",
+  };
 
   return (
-    <div className="relative">
-      <div className="flex items-center justify-between">
-        {steps.map((step, index) => {
-          const state = getStepState(step.key);
-          return (
-            <div key={step.key} className="flex flex-col items-center flex-1">
-              <div className="flex items-center w-full">
-                {/* Line before */}
-                {index > 0 && (
-                  <div className={`flex-1 h-0.5 ${
-                    state === "done" ? "bg-green-500" :
-                    state === "cancelled" ? "bg-red-500" :
-                    "bg-white/20"
-                  }`} />
-                )}
-
-                {/* Circle */}
-                <div className={`h-8 w-8 rounded-full flex items-center justify-center flex-shrink-0 ${
-                  state === "done" ? "bg-green-500" :
-                  state === "active" ? "bg-yellow-500" :
-                  state === "cancelled" ? "bg-red-500" :
-                  "bg-white/20"
-                }`}>
-                  {state === "done" && <CheckCircle className="h-5 w-5 text-white" />}
-                  {state === "active" && <Clock className="h-5 w-5 text-white" />}
-                  {state === "cancelled" && <XCircle className="h-5 w-5 text-white" />}
-                  {state === "inactive" && <Circle className="h-5 w-5 text-white/40" />}
-                </div>
-
-                {/* Line after */}
-                {index < steps.length - 1 && (
-                  <div className={`flex-1 h-0.5 ${
-                    getStepState(steps[index + 1].key) === "done" ||
-                    getStepState(steps[index + 1].key) === "active"
-                      ? "bg-green-500"
-                      : "bg-white/20"
-                  }`} />
-                )}
-              </div>
-
-              {/* Label */}
-              <p className={`text-xs mt-2 text-center ${
-                state === "done" ? "text-green-400" :
-                state === "active" ? "text-yellow-400" :
-                state === "cancelled" ? "text-red-400" :
-                "text-white/30"
-              }`}>
-                {state === "cancelled" && step.key === "pending" ? "Cancelled" : step.label}
-              </p>
-            </div>
-          );
-        })}
+    <div className="flex flex-col items-center gap-1">
+      <div className={`h-8 w-8 rounded-full border-2 flex items-center justify-center transition-all ${colors[color]}`}>
+        {icon}
       </div>
+      <span className={`text-xs whitespace-nowrap ${active ? "text-white/80" : "text-white/30"}`}>
+        {label}
+      </span>
     </div>
   );
 }
 
-function StatusBadge({ status }) {
-  const styles = {
-    pending: "bg-yellow-500/20 border-yellow-500/30 text-yellow-300",
-    confirmed: "bg-green-500/20 border-green-500/30 text-green-300",
-    cancelled: "bg-red-500/20 border-red-500/30 text-red-300",
-  };
-
+function TimelineLine({ active }) {
   return (
-    <span className={`px-3 py-1 rounded-full text-xs font-bold border capitalize ${
-      styles[status] || "bg-white/10 border-white/10 text-white/60"
-    }`}>
-      {status}
-    </span>
+    <div className={`h-0.5 flex-1 mx-1 mb-4 transition-all ${active ? "bg-white/40" : "bg-white/10"}`} />
   );
 }

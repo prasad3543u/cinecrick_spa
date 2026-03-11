@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { api } from "../lib/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner"; 
 
 export default function AdminBookings() {
   const [bookings, setBookings] = useState([]);
@@ -19,7 +20,7 @@ export default function AdminBookings() {
       const data = await api("/admin/bookings");
       setBookings(Array.isArray(data) ? data : []);
     } catch (err) {
-      setError(err.message || "Failed to load bookings");
+      toast.error(err.message || "Failed to load bookings");
     } finally {
       setLoading(false);
     }
@@ -27,25 +28,25 @@ export default function AdminBookings() {
 
   async function handleConfirm(id) {
     try {
-      setMessage("");
-      setError("");
+      toast.info("Confirming booking...");
+      toast.error("");
       await api(`/bookings/${id}/confirm`, { method: "PATCH" });
-      setMessage("Booking confirmed!");
+      toast.success("Booking confirmed!");
       loadBookings();
     } catch (err) {
-      setError(err.message || "Failed to confirm booking");
+      toast.error(err.message || "Failed to confirm booking");
     }
   }
 
   async function handleCancel(id) {
     try {
-      setMessage("");
-      setError("");
+      toast.info("Cancelling booking...");
+      toast.error("");
       await api(`/bookings/${id}/cancel`, { method: "PATCH" });
-      setMessage("Booking cancelled.");
+      toast.success("Booking cancelled.");
       loadBookings();
     } catch (err) {
-      setError(err.message || "Failed to cancel booking");
+      toast.error(err.message || "Failed to cancel booking");
     }
   }
 

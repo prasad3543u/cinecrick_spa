@@ -4,6 +4,8 @@ import { api } from "../lib/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
+
 import {
   Dialog, DialogContent, DialogHeader,
   DialogTitle, DialogFooter
@@ -45,7 +47,7 @@ export default function AdminGrounds() {
       const data = await api("/grounds");
       setGrounds(Array.isArray(data) ? data : []);
     } catch (err) {
-      setError(err.message || "Failed to load grounds");
+      toast.error(err.message || "Failed to load grounds");
     } finally {
       setLoadingGrounds(false);
     }
@@ -72,8 +74,8 @@ export default function AdminGrounds() {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    setMessage("");
-    setError("");
+    toast.info("Adding ground...");
+    toast.error("");
 
     try {
       setLoading(true);
@@ -93,7 +95,7 @@ export default function AdminGrounds() {
         },
       });
 
-      setMessage("Ground added successfully.");
+      toast.success("Ground added successfully.");
       setForm({
         name: "", location: "", sport_type: "Cricket",
         price_per_hour: "", opening_time: "", closing_time: "",
@@ -101,7 +103,7 @@ export default function AdminGrounds() {
       });
       await loadGrounds();
     } catch (err) {
-      setError(err.message || "Failed to add ground");
+      toast.error(err.message || "Failed to add ground");
     } finally {
       setLoading(false);
     }
@@ -126,17 +128,17 @@ export default function AdminGrounds() {
   async function handleEditSubmit() {
     try {
       setEditLoading(true);
-      setMessage("");
-      setError("");
+      toast.success("Updating ground...");
+      toast.error("");
       await api(`/grounds/${editGround.id}`, {
         method: "PATCH",
         body: editForm,
       });
-      setMessage("Ground updated successfully.");
+      toast.success("Ground updated successfully.");
       setEditGround(null);
       await loadGrounds();
     } catch (err) {
-      setError(err.message || "Failed to update ground");
+      toast.error(err.message || "Failed to update ground");
     } finally {
       setEditLoading(false);
     }
@@ -147,35 +149,35 @@ export default function AdminGrounds() {
     if (!confirmed) return;
 
     try {
-      setMessage("");
-      setError("");
+      toast.info("Deleting ground...");
+      toast.error("");
       await api(`/grounds/${groundId}`, { method: "DELETE" });
-      setMessage("Ground deleted successfully.");
+      toast.success("Ground deleted successfully.");
       await loadGrounds();
     } catch (err) {
-      setError(err.message || "Failed to delete ground");
+      toast.error(err.message || "Failed to delete ground");
     }
   }
 
   async function handleBlockDate(groundId) {
     if (!blockDate) {
-      setError("Please select a date to block.");
+      toast.error("Please select a date to block.");
       return;
     }
 
     try {
       setBlockLoading(true);
-      setMessage("");
-      setError("");
+      toast.info("Blocking date...");
+      toast.error("");
       await api("/admin/block_date", {
         method: "POST",
         body: { ground_id: groundId, date: blockDate },
       });
-      setMessage(`Date ${blockDate} blocked successfully.`);
+      toast.success(`Date ${blockDate} blocked successfully.`);
       setBlockDate("");
       await loadBlockedDates(groundId);
     } catch (err) {
-      setError(err.message || "Failed to block date");
+      toast.error(err.message || "Failed to block date");
     } finally {
       setBlockLoading(false);
     }
@@ -183,16 +185,16 @@ export default function AdminGrounds() {
 
   async function handleUnblockDate(groundId, date) {
     try {
-      setMessage("");
-      setError("");
+      toast.info("Unblocking date...");
+      toast.error("");
       await api("/admin/unblock_date", {
         method: "DELETE",
         body: { ground_id: groundId, date: date },
       });
-      setMessage(`Date ${date} unblocked successfully.`);
+      toast.success(`Date ${date} unblocked successfully.`);
       await loadBlockedDates(groundId);
     } catch (err) {
-      setError(err.message || "Failed to unblock date");
+      toast.error(err.message || "Failed to unblock date");
     }
   }
 
