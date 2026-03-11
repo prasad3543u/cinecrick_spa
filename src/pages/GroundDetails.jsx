@@ -102,24 +102,26 @@ export default function GroundDetails() {
         : user?.email || "User";
 
       const adminNumber = String(ground.admin_phone).replace(/\D/g, "");
+    const message = `Hello ${ground.admin_name || "Admin"},
 
-      const message = `Hello ${ground.admin_name || "Admin"},
-
-Ground Booking Request
+🏏 Ground Booking Request
 
 Ground: ${ground.name}
 Location: ${ground.location}
 Date: ${selectedDate}
 Time: ${selectedSession.start_time} - ${selectedSession.end_time}
-Price: ₹${selectedSession.price}
+Price: ₹${matchType === "without_opponents" ? selectedSession.price * 2 : selectedSession.price}
 Match Type: ${formatMatchType()}
 
 Requested by:
-${requestedBy}
+Name: ${user?.name || "User"}
+Email: ${user?.email || ""}
 
-Please confirm availability.`;
+⚠️ Please share your payment details for advance payment to confirm this booking.
 
-      const url = `https://wa.me/${adminNumber}?text=${encodeURIComponent(message)}`;
+Note: Cancellation after confirmation — No refund.`;
+
+     const url = `https://wa.me/${adminNumber}?text=${encodeURIComponent(message)}`;
       await loadSlotsByDate(selectedDate);
       window.open(url, "_blank");
     } catch (err) {
