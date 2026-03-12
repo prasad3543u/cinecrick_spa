@@ -70,6 +70,7 @@ export default function Home() {
     if (item === "Admin Bookings") { navigate("/admin/bookings"); return; }
     if (item === "Admin Dashboard") { navigate("/admin/dashboard"); return; }
     if (item === "Profile") { navigate("/profile"); return; }
+    if (item === "Admin Users") { navigate("/admin/users"); return; }
   }
 
   const MENUS = useMemo(() => {
@@ -80,7 +81,7 @@ export default function Home() {
       News: ["Sports News", "Film News", "Trending", "Match Reports", "Box Office", "Interviews", "Reviews", "Rumours"],
       Events: ["Concerts", "Standup", "Theatre", "Festivals", "Kids", "Workshops", "Online", "Nearby"],
       Account: user?.role === "admin"
-        ? ["Profile", "Admin Dashboard", "Admin Grounds", "Admin Bookings", "My Bookings", "Settings", "Logout"]
+        ? ["Profile", "Admin Dashboard", "Admin Users", "Admin Grounds", "Admin Bookings", "My Bookings", "Settings", "Logout"]
         : ["Profile", "My Bookings", "Settings", "Logout"],
     };
     return base;
