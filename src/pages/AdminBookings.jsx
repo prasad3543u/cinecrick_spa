@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { AdminBookingCardSkeleton } from "../components/Skeleton";
 import { toast } from "sonner";
 
 export default function AdminBookings() {
@@ -48,14 +49,6 @@ export default function AdminBookings() {
     }
   }
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[#070812] text-white flex items-center justify-center">
-        <div className="text-white/70">Loading bookings...</div>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-[#070812] text-white px-6 py-10">
       <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
@@ -70,13 +63,15 @@ export default function AdminBookings() {
         </div>
       </div>
 
-      {bookings.length === 0 ? (
-        <div className="rounded-2xl border border-white/10 bg-zinc-950/55 p-6 text-white/70">
-          No bookings found.
-        </div>
-      ) : (
-        <div className="grid gap-5">
-          {bookings.map((booking) => (
+      <div className="grid gap-5">
+        {loading ? (
+          Array.from({ length: 4 }).map((_, i) => <AdminBookingCardSkeleton key={i} />)
+        ) : bookings.length === 0 ? (
+          <div className="rounded-2xl border border-white/10 bg-zinc-950/55 p-6 text-white/70">
+            No bookings found.
+          </div>
+        ) : (
+          bookings.map((booking) => (
             <Card key={booking.id} className="border-white/10 bg-zinc-950/55 overflow-hidden">
               <div className={`h-1 w-full ${
                 booking.status === "confirmed" ? "bg-gradient-to-r from-green-500 to-emerald-400" :
@@ -96,12 +91,9 @@ export default function AdminBookings() {
                     {booking.status}
                   </span>
                 </div>
-
                 <p className="text-white/80">User: {booking.user?.email || "--"}</p>
                 <p className="text-white/80">Date: {booking.booking_date || "--"}</p>
-                <p className="text-white/80">
-                  Slot: {booking.slot?.start_time || "--"} - {booking.slot?.end_time || "--"}
-                </p>
+                <p className="text-white/80">Slot: {booking.slot?.start_time || "--"} - {booking.slot?.end_time || "--"}</p>
                 <p className="text-white/80">Price: ₹{booking.total_price || "--"}</p>
                 <p className="text-white/80">Match Type: {booking.match_type || "--"}</p>
                 <p className="text-white/80">Payment: {booking.payment_status || "--"}</p>
@@ -124,9 +116,9 @@ export default function AdminBookings() {
                 )}
               </CardContent>
             </Card>
-          ))}
-        </div>
-      )}
+          ))
+        )}
+      </div>
     </div>
   );
 }
