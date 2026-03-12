@@ -53,31 +53,31 @@ export default function MyBookings() {
   }
 
   return (
-    <div className="min-h-screen bg-[#070812] text-white px-6 py-10">
-      <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-4xl font-black text-pink-400">My Bookings</h1>
-        <Button onClick={() => navigate("/home")} className="bg-white/10 text-white hover:bg-white/15">
+    <div className="min-h-screen bg-[#070812] text-white px-4 sm:px-6 py-8">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-3xl sm:text-4xl font-black text-pink-400">My Bookings</h1>
+        <Button onClick={() => navigate("/home")} className="bg-white/10 text-white hover:bg-white/15 text-sm">
           Back to Home
         </Button>
       </div>
 
       {error && (
-        <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-red-300">
+        <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-red-300 text-sm">
           {error}
         </div>
       )}
       {cancelSuccess && (
-        <div className="mb-4 rounded-xl border border-yellow-500/30 bg-yellow-500/10 px-4 py-3 text-yellow-300">
+        <div className="mb-4 rounded-xl border border-yellow-500/30 bg-yellow-500/10 px-4 py-3 text-yellow-300 text-sm">
           {cancelSuccess}
         </div>
       )}
       {cancelError && (
-        <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-red-300">
+        <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-red-300 text-sm">
           {cancelError}
         </div>
       )}
 
-      <div className="grid gap-6">
+      <div className="grid gap-5">
         {loading ? (
           Array.from({ length: 3 }).map((_, i) => <BookingCardSkeleton key={i} />)
         ) : bookings.length === 0 ? (
@@ -102,36 +102,38 @@ export default function MyBookings() {
                 "bg-gradient-to-r from-yellow-500 to-orange-400"
               }`} />
 
-              <CardContent className="p-6">
-                <div className="flex flex-wrap items-start justify-between gap-4 mb-5">
-                  <div>
-                    <h2 className="text-2xl font-bold text-pink-400">
+              <CardContent className="p-4 sm:p-6">
+                {/* Header — name + badge stacked on mobile */}
+                <div className="mb-4">
+                  <div className="flex flex-wrap items-start justify-between gap-2">
+                    <h2 className="text-xl sm:text-2xl font-bold text-pink-400">
                       {booking.ground?.name || "Ground"}
                     </h2>
-                    <div className="flex items-center gap-1 text-white/60 text-sm mt-1">
-                      <MapPin className="h-3 w-3" />
-                      {booking.ground?.location || "--"}
-                    </div>
+                    <span className={`px-3 py-1 rounded-full text-xs font-bold flex-shrink-0 ${
+                      booking.status === "confirmed" ? "bg-green-500/20 text-green-300 border border-green-500/30" :
+                      booking.status === "cancelled" ? "bg-red-500/20 text-red-300 border border-red-500/30" :
+                      "bg-yellow-500/20 text-yellow-300 border border-yellow-500/30"
+                    }`}>
+                      {booking.status?.toUpperCase()}
+                    </span>
                   </div>
-                  <span className={`px-3 py-1 rounded-full text-sm font-bold ${
-                    booking.status === "confirmed" ? "bg-green-500/20 text-green-300 border border-green-500/30" :
-                    booking.status === "cancelled" ? "bg-red-500/20 text-red-300 border border-red-500/30" :
-                    "bg-yellow-500/20 text-yellow-300 border border-yellow-500/30"
-                  }`}>
-                    {booking.status?.toUpperCase()}
-                  </span>
+                  <div className="flex items-center gap-1 text-white/60 text-sm mt-1">
+                    <MapPin className="h-3 w-3 flex-shrink-0" />
+                    {booking.ground?.location || "--"}
+                  </div>
                 </div>
 
-                <div className="grid sm:grid-cols-3 gap-3 mb-6">
+                {/* Detail cards — 1 col on mobile, 3 on sm+ */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-4">
                   <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2">
-                    <Calendar className="h-4 w-4 text-pink-400" />
+                    <Calendar className="h-4 w-4 text-pink-400 flex-shrink-0" />
                     <div>
                       <p className="text-xs text-white/50">Date</p>
                       <p className="text-sm font-semibold">{booking.booking_date || "--"}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2">
-                    <Clock className="h-4 w-4 text-violet-400" />
+                    <Clock className="h-4 w-4 text-violet-400 flex-shrink-0" />
                     <div>
                       <p className="text-xs text-white/50">Slot</p>
                       <p className="text-sm font-semibold">
@@ -140,7 +142,7 @@ export default function MyBookings() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2">
-                    <CreditCard className="h-4 w-4 text-emerald-400" />
+                    <CreditCard className="h-4 w-4 text-emerald-400 flex-shrink-0" />
                     <div>
                       <p className="text-xs text-white/50">Total Price</p>
                       <p className="text-sm font-semibold">₹{booking.total_price || "--"}</p>
@@ -148,12 +150,13 @@ export default function MyBookings() {
                   </div>
                 </div>
 
-                <div className="mb-6 text-sm text-white/60 space-y-1">
+                <div className="mb-4 text-sm text-white/60 space-y-1">
                   <p>Match Type: <span className="text-white/80">{booking.match_type || "--"}</span></p>
                   <p>Payment: <span className="text-white/80">{booking.payment_status || "--"}</span></p>
                 </div>
 
-                <div className="mb-5">
+                {/* Timeline */}
+                <div className="mb-4">
                   <p className="text-xs text-white/40 uppercase tracking-widest mb-3">Booking Timeline</p>
                   <div className="flex items-center">
                     <TimelineStep icon={<CheckCircle className="h-4 w-4" />} label="Created" active={true} color="pink" />
@@ -176,7 +179,7 @@ export default function MyBookings() {
                     <Button
                       onClick={() => handleCancel(booking.id)}
                       disabled={cancellingId === booking.id}
-                      className="bg-red-500/20 border border-red-500/30 text-red-300 hover:bg-red-500/30"
+                      className="w-full sm:w-auto bg-red-500/20 border border-red-500/30 text-red-300 hover:bg-red-500/30 text-sm"
                     >
                       {cancellingId === booking.id ? "Cancelling..." : "Cancel Booking"}
                     </Button>
