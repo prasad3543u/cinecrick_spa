@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { MapPin, Clock, Shield, User, Phone } from "lucide-react";
 
 export default function GroundDetails() {
   const { id } = useParams();
@@ -84,7 +85,6 @@ export default function GroundDetails() {
 
     try {
       setBookingLoading(true);
-
       await api("/bookings", {
         method: "POST",
         body: {
@@ -135,11 +135,11 @@ Note: Cancellation after confirmation — No refund.`;
   }
 
   return (
-    <div className="min-h-screen bg-[#070812] text-white px-4 sm:px-6 lg:px-20 py-6">
+    <div className="min-h-screen bg-[#070812] text-white px-4 sm:px-6 lg:px-20 py-6 sm:py-10">
 
       <Button
         onClick={() => navigate("/grounds")}
-        className="mb-5 bg-white/10 text-white hover:bg-white/15 text-sm"
+        className="mb-5 bg-white/10 text-white hover:bg-white/15"
       >
         ← Back to Grounds
       </Button>
@@ -156,34 +156,49 @@ Note: Cancellation after confirmation — No refund.`;
           <img
             src={ground.image_url}
             alt={ground.name}
-            className="w-full h-48 sm:h-72 object-cover rounded-xl mb-4"
+            className="w-full h-48 sm:h-64 lg:h-80 object-cover rounded-xl mb-4"
             onError={(e) => {
               e.target.src = "https://images.unsplash.com/photo-1531415074968-036ba1b575da?w=600";
             }}
           />
-          <h1 className="text-2xl sm:text-3xl font-bold mb-2">{ground.name}</h1>
-          <div className="space-y-1 text-sm text-white/70">
-            <p>Location: {ground.location}</p>
-            <p>Timings: {ground.opening_time} - {ground.closing_time}</p>
-            <p>Amenities: {ground.amenities}</p>
-            <p>Ground Owner: {ground.admin_name || "Not set"}</p>
-            <p>WhatsApp: {ground.admin_phone || "Not set"}</p>
+          <h1 className="text-2xl sm:text-3xl font-bold mb-3">{ground.name}</h1>
+          <div className="grid sm:grid-cols-2 gap-2 text-sm text-white/70">
+            <div className="flex items-center gap-2">
+              <MapPin className="h-4 w-4 text-pink-400 shrink-0" />
+              <span>{ground.location}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Clock className="h-4 w-4 text-violet-400 shrink-0" />
+              <span>{ground.opening_time} - {ground.closing_time}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Shield className="h-4 w-4 text-cyan-400 shrink-0" />
+              <span>{ground.amenities || "Not listed"}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <User className="h-4 w-4 text-emerald-400 shrink-0" />
+              <span>{ground.admin_name || "Not set"}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Phone className="h-4 w-4 text-yellow-400 shrink-0" />
+              <span>{ground.admin_phone || "Not set"}</span>
+            </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Date Picker */}
+      {/* Date Selection */}
       <h2 className="text-xl sm:text-2xl font-bold mb-3">Select Match Date</h2>
       <div className="mb-6">
         <input
           type="date"
           value={selectedDate}
           onChange={(e) => setSelectedDate(e.target.value)}
-          className="w-full sm:w-auto rounded-lg border border-white/10 bg-zinc-900 px-4 py-3 text-white text-sm"
+          className="w-full sm:w-auto rounded-lg border border-white/10 bg-zinc-900 px-4 py-3 text-white"
         />
       </div>
 
-      {/* Slots */}
+      {/* Available Sessions */}
       <h2 className="text-xl sm:text-2xl font-bold mb-3">Available Match Sessions</h2>
 
       {slotError && (
@@ -219,12 +234,12 @@ Note: Cancellation after confirmation — No refund.`;
                 } ${isBooked ? "opacity-80 cursor-not-allowed" : "hover:border-pink-400"}`}
                 onClick={() => handleSelectSession(session)}
               >
-                <CardContent className="p-4">
-                  <h3 className="text-lg font-bold mb-1">
+                <CardContent className="p-4 sm:p-6">
+                  <h3 className="text-lg sm:text-xl font-bold mb-2">
                     {session.start_time} - {session.end_time}
                   </h3>
                   <p className="text-white/70 text-sm">Date: {session.slot_date}</p>
-                  <p className="text-pink-400 font-semibold mt-1 text-sm">₹{session.price} per team</p>
+                  <p className="text-pink-400 font-semibold mt-1">₹{session.price} per team</p>
                   <p className="text-white/70 mt-1 text-sm">
                     Teams: {session.teams_booked_count || 0} / {session.max_teams || 2}
                   </p>
@@ -250,7 +265,7 @@ Note: Cancellation after confirmation — No refund.`;
             value="with_opponents"
             checked={matchType === "with_opponents"}
             onChange={(e) => setMatchType(e.target.value)}
-            className="accent-pink-500"
+            className="h-4 w-4 accent-pink-500"
           />
           Ground Needed With Opponents
         </label>
@@ -261,7 +276,7 @@ Note: Cancellation after confirmation — No refund.`;
             value="without_opponents"
             checked={matchType === "without_opponents"}
             onChange={(e) => setMatchType(e.target.value)}
-            className="accent-pink-500"
+            className="h-4 w-4 accent-pink-500"
           />
           Ground Needed Without Opponents
         </label>
@@ -270,7 +285,7 @@ Note: Cancellation after confirmation — No refund.`;
       {/* Selected Session Summary */}
       {selectedSession && (
         <Card className="bg-zinc-900 border border-white/10 mb-6">
-          <CardContent className="p-4">
+          <CardContent className="p-4 sm:p-5">
             <h3 className="text-lg font-bold mb-2 text-pink-400">Selected Session</h3>
             <p className="text-white/80 text-sm">{selectedSession.start_time} - {selectedSession.end_time}</p>
             <p className="text-white/70 text-sm">Date: {selectedSession.slot_date}</p>
@@ -295,7 +310,7 @@ Note: Cancellation after confirmation — No refund.`;
       <Button
         onClick={handleWhatsAppBooking}
         disabled={bookingLoading}
-        className="w-full sm:w-auto bg-green-500 hover:bg-green-600 text-black font-bold text-base px-8 py-4"
+        className="w-full sm:w-auto bg-green-500 hover:bg-green-600 text-black font-bold text-base sm:text-lg px-6 sm:px-8 py-3 sm:py-4"
       >
         {bookingLoading ? "Creating request..." : "Book via WhatsApp"}
       </Button>

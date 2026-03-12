@@ -4,7 +4,10 @@ import { api } from "../lib/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { BookingCardSkeleton } from "../components/Skeleton";
-import { CheckCircle, Clock, XCircle, Calendar, MapPin, CreditCard } from "lucide-react";
+import {
+  CheckCircle, Clock, XCircle, Calendar,
+  MapPin, CreditCard, AlertTriangle
+} from "lucide-react";
 
 export default function MyBookings() {
   const navigate = useNavigate();
@@ -34,7 +37,7 @@ export default function MyBookings() {
 
   async function handleCancel(bookingId) {
     const confirmed = window.confirm(
-      "⚠️ Are you sure you want to cancel?\n\nNo refund will be provided on cancellation."
+      "Are you sure you want to cancel?\n\nNo refund will be provided on cancellation."
     );
     if (!confirmed) return;
 
@@ -53,26 +56,29 @@ export default function MyBookings() {
   }
 
   return (
-    <div className="min-h-screen bg-[#070812] text-white px-4 sm:px-6 py-8">
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+    <div className="min-h-screen bg-[#070812] text-white px-4 sm:px-6 py-6 sm:py-10">
+      <div className="mb-6 sm:mb-8 flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-3xl sm:text-4xl font-black text-pink-400">My Bookings</h1>
-        <Button onClick={() => navigate("/home")} className="bg-white/10 text-white hover:bg-white/15 text-sm">
+        <Button onClick={() => navigate("/home")} className="bg-white/10 text-white hover:bg-white/15">
           Back to Home
         </Button>
       </div>
 
       {error && (
-        <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-red-300 text-sm">
+        <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-red-300 text-sm flex items-center gap-2">
+          <XCircle className="h-4 w-4 shrink-0" />
           {error}
         </div>
       )}
       {cancelSuccess && (
-        <div className="mb-4 rounded-xl border border-yellow-500/30 bg-yellow-500/10 px-4 py-3 text-yellow-300 text-sm">
+        <div className="mb-4 rounded-xl border border-yellow-500/30 bg-yellow-500/10 px-4 py-3 text-yellow-300 text-sm flex items-center gap-2">
+          <AlertTriangle className="h-4 w-4 shrink-0" />
           {cancelSuccess}
         </div>
       )}
       {cancelError && (
-        <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-red-300 text-sm">
+        <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-red-300 text-sm flex items-center gap-2">
+          <XCircle className="h-4 w-4 shrink-0" />
           {cancelError}
         </div>
       )}
@@ -103,46 +109,46 @@ export default function MyBookings() {
               }`} />
 
               <CardContent className="p-4 sm:p-6">
-                {/* Header — name + badge stacked on mobile */}
-                <div className="mb-4">
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <h2 className="text-xl sm:text-2xl font-bold text-pink-400">
+                {/* Header */}
+                <div className="flex flex-wrap items-start justify-between gap-2 mb-4">
+                  <div className="flex-1 min-w-0">
+                    <h2 className="text-lg sm:text-2xl font-bold text-pink-400 leading-tight">
                       {booking.ground?.name || "Ground"}
                     </h2>
-                    <span className={`px-3 py-1 rounded-full text-xs font-bold flex-shrink-0 ${
-                      booking.status === "confirmed" ? "bg-green-500/20 text-green-300 border border-green-500/30" :
-                      booking.status === "cancelled" ? "bg-red-500/20 text-red-300 border border-red-500/30" :
-                      "bg-yellow-500/20 text-yellow-300 border border-yellow-500/30"
-                    }`}>
-                      {booking.status?.toUpperCase()}
-                    </span>
+                    <div className="flex items-center gap-1 text-white/60 text-xs sm:text-sm mt-1">
+                      <MapPin className="h-3 w-3 shrink-0" />
+                      <span className="truncate">{booking.ground?.location || "--"}</span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-1 text-white/60 text-sm mt-1">
-                    <MapPin className="h-3 w-3 flex-shrink-0" />
-                    {booking.ground?.location || "--"}
-                  </div>
+                  <span className={`shrink-0 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-bold ${
+                    booking.status === "confirmed" ? "bg-green-500/20 text-green-300 border border-green-500/30" :
+                    booking.status === "cancelled" ? "bg-red-500/20 text-red-300 border border-red-500/30" :
+                    "bg-yellow-500/20 text-yellow-300 border border-yellow-500/30"
+                  }`}>
+                    {booking.status?.toUpperCase()}
+                  </span>
                 </div>
 
-                {/* Detail cards — 1 col on mobile, 3 on sm+ */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-4">
+                {/* Details grid */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 mb-4">
                   <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2">
-                    <Calendar className="h-4 w-4 text-pink-400 flex-shrink-0" />
-                    <div>
+                    <Calendar className="h-4 w-4 text-pink-400 shrink-0" />
+                    <div className="min-w-0">
                       <p className="text-xs text-white/50">Date</p>
-                      <p className="text-sm font-semibold">{booking.booking_date || "--"}</p>
+                      <p className="text-sm font-semibold truncate">{booking.booking_date || "--"}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2">
-                    <Clock className="h-4 w-4 text-violet-400 flex-shrink-0" />
-                    <div>
+                    <Clock className="h-4 w-4 text-violet-400 shrink-0" />
+                    <div className="min-w-0">
                       <p className="text-xs text-white/50">Slot</p>
-                      <p className="text-sm font-semibold">
+                      <p className="text-sm font-semibold truncate">
                         {booking.slot?.start_time || "--"} - {booking.slot?.end_time || "--"}
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2">
-                    <CreditCard className="h-4 w-4 text-emerald-400 flex-shrink-0" />
+                    <CreditCard className="h-4 w-4 text-emerald-400 shrink-0" />
                     <div>
                       <p className="text-xs text-white/50">Total Price</p>
                       <p className="text-sm font-semibold">₹{booking.total_price || "--"}</p>
@@ -150,7 +156,7 @@ export default function MyBookings() {
                   </div>
                 </div>
 
-                <div className="mb-4 text-sm text-white/60 space-y-1">
+                <div className="mb-4 text-xs sm:text-sm text-white/60 space-y-1">
                   <p>Match Type: <span className="text-white/80">{booking.match_type || "--"}</span></p>
                   <p>Payment: <span className="text-white/80">{booking.payment_status || "--"}</span></p>
                 </div>
@@ -159,22 +165,24 @@ export default function MyBookings() {
                 <div className="mb-4">
                   <p className="text-xs text-white/40 uppercase tracking-widest mb-3">Booking Timeline</p>
                   <div className="flex items-center">
-                    <TimelineStep icon={<CheckCircle className="h-4 w-4" />} label="Created" active={true} color="pink" />
+                    <TimelineStep icon={<CheckCircle className="h-3 w-3 sm:h-4 sm:w-4" />} label="Created" active={true} color="pink" />
                     <TimelineLine active={true} />
-                    <TimelineStep icon={<Clock className="h-4 w-4" />} label="Pending" active={["pending", "confirmed", "cancelled"].includes(booking.status)} color="yellow" />
+                    <TimelineStep icon={<Clock className="h-3 w-3 sm:h-4 sm:w-4" />} label="Pending" active={["pending", "confirmed", "cancelled"].includes(booking.status)} color="yellow" />
                     <TimelineLine active={["confirmed", "cancelled"].includes(booking.status)} />
                     {booking.status === "cancelled" ? (
-                      <TimelineStep icon={<XCircle className="h-4 w-4" />} label="Cancelled" active={true} color="red" />
+                      <TimelineStep icon={<XCircle className="h-3 w-3 sm:h-4 sm:w-4" />} label="Cancelled" active={true} color="red" />
                     ) : (
-                      <TimelineStep icon={<CheckCircle className="h-4 w-4" />} label="Confirmed" active={booking.status === "confirmed"} color="green" />
+                      <TimelineStep icon={<CheckCircle className="h-3 w-3 sm:h-4 sm:w-4" />} label="Confirmed" active={booking.status === "confirmed"} color="green" />
                     )}
                   </div>
                 </div>
 
+                {/* Status messages */}
                 {booking.status === "pending" && (
                   <div>
-                    <div className="mb-3 rounded-xl border border-yellow-500/20 bg-yellow-500/5 px-3 py-2 text-xs text-yellow-300">
-                      ⚠️ Once confirmed by admin, cancellation is not allowed. No refund on cancellation.
+                    <div className="mb-3 rounded-xl border border-yellow-500/20 bg-yellow-500/5 px-3 py-2 text-xs text-yellow-300 flex items-center gap-2">
+                      <AlertTriangle className="h-3 w-3 shrink-0" />
+                      Once confirmed by admin, cancellation is not allowed. No refund on cancellation.
                     </div>
                     <Button
                       onClick={() => handleCancel(booking.id)}
@@ -185,14 +193,18 @@ export default function MyBookings() {
                     </Button>
                   </div>
                 )}
+
                 {booking.status === "confirmed" && (
-                  <div className="rounded-xl border border-green-500/20 bg-green-500/5 px-3 py-2 text-xs text-green-300">
-                    ✅ Booking confirmed. See you on the ground!
+                  <div className="rounded-xl border border-green-500/20 bg-green-500/5 px-3 py-2 text-xs text-green-300 flex items-center gap-2">
+                    <CheckCircle className="h-3 w-3 shrink-0" />
+                    Booking confirmed. See you on the ground!
                   </div>
                 )}
+
                 {booking.status === "cancelled" && (
-                  <div className="rounded-xl border border-red-500/20 bg-red-500/5 px-3 py-2 text-xs text-red-300">
-                    ❌ Booking cancelled. No refund issued.
+                  <div className="rounded-xl border border-red-500/20 bg-red-500/5 px-3 py-2 text-xs text-red-300 flex items-center gap-2">
+                    <XCircle className="h-3 w-3 shrink-0" />
+                    Booking cancelled. No refund issued.
                   </div>
                 )}
               </CardContent>
@@ -213,10 +225,10 @@ function TimelineStep({ icon, label, active, color }) {
   };
   return (
     <div className="flex flex-col items-center gap-1">
-      <div className={`h-8 w-8 rounded-full border-2 flex items-center justify-center transition-all ${colors[color]}`}>
+      <div className={`h-7 w-7 sm:h-8 sm:w-8 rounded-full border-2 flex items-center justify-center transition-all ${colors[color]}`}>
         {icon}
       </div>
-      <span className={`text-xs whitespace-nowrap ${active ? "text-white/80" : "text-white/30"}`}>
+      <span className={`text-[10px] sm:text-xs whitespace-nowrap ${active ? "text-white/80" : "text-white/30"}`}>
         {label}
       </span>
     </div>

@@ -70,7 +70,6 @@ export default function Home() {
     if (item === "Admin Bookings") { navigate("/admin/bookings"); return; }
     if (item === "Admin Dashboard") { navigate("/admin/dashboard"); return; }
     if (item === "Profile") { navigate("/profile"); return; }
-    alert(`${category} → ${item}`);
   }
 
   const MENUS = useMemo(() => {
@@ -161,31 +160,31 @@ export default function Home() {
               <div className="text-2xl font-black tracking-tight">CineCrick</div>
             </div>
 
-            {/* Right side — desktop */}
+            {/* Desktop user info */}
             <div className="hidden md:flex items-center gap-3 rounded-full border border-white/10 bg-white/5 px-3 py-2">
-              <span className="h-2 w-2 rounded-full bg-emerald-400" />
-              <span className="max-w-[200px] truncate text-sm text-white/80">{user.email}</span>
+              <span className="h-2.5 w-2.5 rounded-full bg-emerald-400 shadow-[0_0_0_6px_rgba(16,185,129,.14)]" />
+              <span className="max-w-[200px] truncate text-sm text-white/80">{user.email || "—"}</span>
               {user.role === "admin" && (
                 <span className="rounded-full bg-pink-500/20 border border-pink-500/30 px-2 py-0.5 text-xs text-pink-300 font-semibold">
                   Admin
                 </span>
               )}
-              <Avatar className="h-7 w-7">
-                <AvatarFallback className="bg-white/10 text-white/90 text-xs">
+              <Avatar className="h-8 w-8">
+                <AvatarFallback className="bg-white/10 text-white/90">
                   {String(user.email || "U")[0]?.toUpperCase()}
                 </AvatarFallback>
               </Avatar>
               <Button
                 onClick={logout}
                 size="sm"
-                className="h-8 rounded-full bg-gradient-to-r from-pink-500 to-rose-400 font-bold text-xs hover:opacity-95"
+                className="h-8 rounded-full bg-gradient-to-r from-pink-500 to-rose-400 font-bold hover:opacity-95"
               >
                 <LogOut className="mr-1 h-3 w-3" />
                 Logout
               </Button>
             </div>
 
-            {/* Right side — mobile */}
+            {/* Mobile: avatar + hamburger */}
             <div className="flex md:hidden items-center gap-2">
               {user.role === "admin" && (
                 <span className="rounded-full bg-pink-500/20 border border-pink-500/30 px-2 py-0.5 text-xs text-pink-300 font-semibold">
@@ -193,13 +192,13 @@ export default function Home() {
                 </span>
               )}
               <Avatar className="h-8 w-8">
-                <AvatarFallback className="bg-white/10 text-white/90 text-xs">
+                <AvatarFallback className="bg-white/10 text-white/90">
                   {String(user.email || "U")[0]?.toUpperCase()}
                 </AvatarFallback>
               </Avatar>
               <button
                 type="button"
-                onClick={() => setMobileMenuOpen((v) => !v)}
+                onClick={() => setMobileMenuOpen((p) => !p)}
                 className="grid h-9 w-9 place-items-center rounded-xl border border-white/10 bg-white/5"
               >
                 {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -207,7 +206,7 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Desktop nav */}
+          {/* Desktop nav menus */}
           <div className="hidden md:block mt-4">
             <NavigationMenu>
               <NavigationMenuList className="flex flex-wrap gap-2">
@@ -220,35 +219,45 @@ export default function Home() {
             </NavigationMenu>
           </div>
 
-          {/* Mobile nav drawer */}
+          {/* Mobile menu dropdown */}
           {mobileMenuOpen && (
-            <div className="md:hidden mt-3 pb-3 border-t border-white/10 pt-3">
-              {/* User info on mobile */}
-              <div className="mb-3 flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2">
-                <span className="h-2 w-2 rounded-full bg-emerald-400 flex-shrink-0" />
-                <span className="text-sm text-white/80 truncate flex-1">{user.email}</span>
+            <div className="md:hidden mt-3 rounded-2xl border border-white/10 bg-zinc-950/95 p-4 space-y-2">
+              {/* User info */}
+              <div className="flex items-center gap-2 pb-3 border-b border-white/10">
+                <span className="h-2 w-2 rounded-full bg-emerald-400" />
+                <span className="text-sm text-white/70 truncate">{user.email}</span>
               </div>
 
-              {/* Menu grid */}
-              <div className="grid grid-cols-3 gap-2 mb-3">
-                {Object.keys(MENUS).map((k) => (
-                  <MenuDropdown
-                    key={k}
-                    label={k}
-                    items={MENUS[k]}
-                    onPick={(item) => handleMenuPick(k, item)}
-                    mobile
-                  />
-                ))}
-              </div>
+              {/* Menu items flat list */}
+              {Object.entries(MENUS).map(([category, items]) => (
+                <div key={category}>
+                  <p className="text-xs text-white/40 uppercase tracking-widest px-2 pt-2 pb-1">{category}</p>
+                  <div className="grid grid-cols-2 gap-1">
+                    {items.map((item) => (
+                      <button
+                        key={item}
+                        type="button"
+                        onClick={() => handleMenuPick(category, item)}
+                        className="text-left rounded-xl px-3 py-2 text-sm text-white/80 hover:bg-white/10 hover:text-white transition"
+                      >
+                        {item}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
 
-              <Button
-                onClick={logout}
-                className="w-full bg-gradient-to-r from-pink-500 to-rose-400 font-bold"
-              >
-                <LogOut className="mr-2 h-4 w-4" />
-                Logout
-              </Button>
+              {/* Logout */}
+              <div className="pt-3 border-t border-white/10">
+                <button
+                  type="button"
+                  onClick={logout}
+                  className="w-full flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-red-300 hover:bg-red-500/10 transition"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Logout
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -276,7 +285,7 @@ export default function Home() {
               <div className="mt-3 flex flex-wrap gap-2">
                 <Button
                   onClick={() => navigate("/grounds")}
-                  className="bg-gradient-to-r from-pink-500 to-violet-500 font-bold text-sm hover:opacity-95"
+                  className="bg-gradient-to-r from-pink-500 to-violet-500 font-bold hover:opacity-95 text-sm"
                 >
                   Explore Grounds
                 </Button>
@@ -289,15 +298,12 @@ export default function Home() {
                 </Button>
               </div>
 
-              <div className="absolute bottom-4 left-4 flex gap-2">
+              <div className="absolute bottom-4 left-4 sm:left-7 flex gap-2">
                 {slides.map((_, i) => (
                   <button
                     key={i}
                     onClick={() => setSlide(i)}
-                    className={`h-2 w-2 rounded-full transition ${
-                      i === slide ? "bg-white" : "bg-white/30 hover:bg-white/50"
-                    }`}
-                    aria-label={`Go to slide ${i + 1}`}
+                    className={`h-2 w-2 rounded-full transition ${i === slide ? "bg-white" : "bg-white/30 hover:bg-white/50"}`}
                     type="button"
                   />
                 ))}
@@ -319,7 +325,7 @@ export default function Home() {
         </Card>
       </section>
 
-      {/* About + Why */}
+      {/* About section */}
       <section className="w-full px-4 lg:px-14 py-6">
         <div className="grid gap-4 lg:grid-cols-2">
           <DarkCard title="About CineCrick">
@@ -345,21 +351,23 @@ export default function Home() {
           </DarkCard>
 
           <DarkCard title="Why CineCrick">
-            <div className="mt-2 grid gap-3 grid-cols-2">
-              <Pro icon={<Zap className="h-5 w-5" />} title="Fast booking" desc="Quick flow from selection to confirmation." />
-              <Pro icon={<Compass className="h-5 w-5" />} title="Smart navigation" desc="Dropdown menus with search." />
-              <Pro icon={<Lock className="h-5 w-5" />} title="Protected pages" desc="Home opens only after signup." />
-              <Pro icon={<FilmIcon className="h-5 w-5" />} title="Entertainment hub" desc="Movies + cricket in one dashboard." />
+            <div className="mt-2 grid gap-3 sm:grid-cols-2">
+              <Pro icon={<Zap className="h-6 w-6" />} title="Fast booking" desc="Quick flow from selection to confirmation." />
+              <Pro icon={<Compass className="h-6 w-6" />} title="Smart navigation" desc="Dropdown menus with search + scrollable options." />
+              <Pro icon={<Lock className="h-6 w-6" />} title="Protected pages" desc="Home opens only after signup." />
+              <Pro icon={<FilmIcon className="h-6 w-6" />} title="Entertainment hub" desc="Movies + cricket + events in one dashboard." />
             </div>
           </DarkCard>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="mt-10 border-t border-pink-500/30 bg-gradient-to-b from-black to-[#070812]">
-        <div className="w-full px-4 lg:px-14 py-8 grid gap-6 grid-cols-2 md:grid-cols-4">
-          <div className="col-span-2 md:col-span-1">
-            <div className="text-2xl font-black text-pink-400">CineCrick</div>
+      <footer className="mt-14 border-t border-pink-500/30 bg-gradient-to-b from-black to-[#070812] shadow-[0_-20px_80px_rgba(236,72,153,0.25)]">
+        <div className="w-full px-4 lg:px-14 py-10 grid gap-8 sm:grid-cols-2 md:grid-cols-4">
+          <div>
+            <div className="text-3xl font-black text-pink-400 drop-shadow-[0_0_15px_rgba(236,72,153,0.7)]">
+              CineCrick
+            </div>
             <p className="mt-2 text-sm text-white/70 leading-relaxed">
               Your one-stop destination for movies, cricket, events, and bookings.
             </p>
@@ -376,19 +384,17 @@ export default function Home() {
   );
 }
 
-function MenuDropdown({ label, items, onPick, mobile = false }) {
+function MenuDropdown({ label, items, onPick }) {
   const inputRef = useRef(null);
   return (
     <DropdownMenu onOpenChange={(open) => open && setTimeout(() => inputRef.current?.focus(), 0)}>
       <DropdownMenuTrigger asChild>
-        <Button className={`border border-white/10 bg-white/5 text-white hover:bg-white/10 ${
-          mobile ? "w-full text-xs px-2 py-1 h-9 rounded-xl" : "rounded-xl"
-        }`}>
-          <span className="truncate">{label}</span>
-          <ChevronDown className="ml-1 h-3 w-3 opacity-80 flex-shrink-0" />
+        <Button className="rounded-xl border border-white/10 bg-white/5 text-white hover:bg-white/10 text-sm">
+          {label}
+          <ChevronDown className="ml-2 h-4 w-4 opacity-80" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="start" className="w-72 rounded-2xl border-white/10 bg-zinc-950/95 text-white shadow-2xl backdrop-blur-xl z-[100]">
+      <DropdownMenuContent align="start" className="w-72 sm:w-80 rounded-2xl border-white/10 bg-zinc-950/95 text-white shadow-2xl backdrop-blur-xl">
         <Command className="bg-transparent text-white">
           <div className="px-3 pt-3">
             <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3">
@@ -415,7 +421,7 @@ function MenuDropdown({ label, items, onPick, mobile = false }) {
 function DarkCard({ title, children }) {
   return (
     <Card className="border-white/10 bg-zinc-950/55 shadow-[0_20px_60px_rgba(0,0,0,.55)]">
-      <CardContent className="p-5">
+      <CardContent className="p-5 sm:p-6">
         <h2 className="text-xl font-black">{title}</h2>
         <div className="mt-2">{children}</div>
       </CardContent>
@@ -425,8 +431,8 @@ function DarkCard({ title, children }) {
 
 function Pro({ icon, title, desc }) {
   return (
-    <div className="flex gap-2 rounded-2xl border border-white/10 bg-white/5 p-3 hover:bg-white/10 transition">
-      <div className="grid h-9 w-9 flex-shrink-0 place-items-center rounded-xl border border-pink-500/20 bg-pink-500/10 text-pink-200">
+    <div className="flex gap-3 rounded-2xl border border-white/10 bg-white/5 p-3 sm:p-4 hover:bg-white/10 transition">
+      <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-pink-500/20 bg-pink-500/10 text-pink-200">
         {icon}
       </div>
       <div>
@@ -440,10 +446,10 @@ function Pro({ icon, title, desc }) {
 function FooterCol({ title, items }) {
   return (
     <div>
-      <div className="font-bold text-white text-sm">{title}</div>
-      <ul className="mt-2 space-y-1 text-xs text-white/70">
+      <div className="font-bold text-white">{title}</div>
+      <ul className="mt-3 space-y-2 text-sm text-white/70">
         {items.map((x) => (
-          <li key={x} className="cursor-pointer hover:text-pink-400 transition-colors">
+          <li key={x} className="cursor-pointer hover:text-pink-400 hover:translate-x-1 transition-all duration-200">
             {x}
           </li>
         ))}
