@@ -186,6 +186,9 @@ export default function AdminGrounds() {
 
   return (
     <div className="min-h-screen bg-[#070812] text-white px-6 py-10">
+      <Button onClick={() => navigate(-1)} className="mb-6 bg-white/10 text-white hover:bg-white/15">
+        ← Back
+      </Button>
       <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-4xl font-black text-pink-400">Admin Grounds</h1>
         <div className="flex gap-3">
