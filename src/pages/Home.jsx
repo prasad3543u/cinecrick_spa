@@ -71,7 +71,8 @@ export default function Home() {
     if (item === "Admin Dashboard") { navigate("/admin/dashboard"); return; }
     if (item === "Profile") { navigate("/profile"); return; }
     if (item === "Admin Users") { navigate("/admin/users"); return; }
-  }
+    if (item === "Settings") { navigate("/settings"); return; }
+    }
 
   const MENUS = useMemo(() => {
     const base = {
