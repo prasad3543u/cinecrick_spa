@@ -10,13 +10,9 @@ import { toast } from "sonner";
 import {
   User, Lock, Palette, Bell, Trash2,
   ArrowLeft, Loader2, Sun, Moon, Monitor,
-  Mail, Calendar, Heart, ShieldAlert, CheckCircle2,
+  Mail, Calendar, Phone, ShieldAlert, CheckCircle2,
   Eye, EyeOff
 } from "lucide-react";
-import {
-  Select, SelectContent, SelectItem,
-  SelectTrigger, SelectValue,
-} from "@/components/ui/select";
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -25,7 +21,7 @@ export default function Settings() {
   const [loading, setLoading] = useState(true);
 
   // Profile
-  const [profile, setProfile] = useState({ name: "", dob: "", interest: "" });
+  const [profile, setProfile] = useState({ name: "", dob: "", phone: "" });
   const [profileLoading, setProfileLoading] = useState(false);
 
   // Password
@@ -62,7 +58,7 @@ export default function Settings() {
         setProfile({
           name: data.user.name || "",
           dob: data.user.dob || "",
-          interest: data.user.interest || "",
+          phone: data.user.phone || "",
         });
       } catch {
         clearToken();
@@ -197,6 +193,8 @@ export default function Settings() {
           color="pink"
         >
           <form onSubmit={handleProfileSave} className="space-y-4">
+
+            {/* Name */}
             <div className="space-y-1.5">
               <Label className="text-white/70 text-sm flex items-center gap-1.5">
                 <User className="h-3.5 w-3.5" /> Full Name
@@ -209,6 +207,7 @@ export default function Settings() {
               />
             </div>
 
+            {/* Email — read only */}
             <div className="space-y-1.5">
               <Label className="text-white/70 text-sm flex items-center gap-1.5">
                 <Mail className="h-3.5 w-3.5" /> Email
@@ -221,6 +220,7 @@ export default function Settings() {
               <p className="text-xs text-white/30">Email cannot be changed.</p>
             </div>
 
+            {/* DOB */}
             <div className="space-y-1.5">
               <Label className="text-white/70 text-sm flex items-center gap-1.5">
                 <Calendar className="h-3.5 w-3.5" /> Date of Birth
@@ -233,23 +233,19 @@ export default function Settings() {
               />
             </div>
 
+            {/* Phone */}
             <div className="space-y-1.5">
               <Label className="text-white/70 text-sm flex items-center gap-1.5">
-                <Heart className="h-3.5 w-3.5" /> Interest
+                <Phone className="h-3.5 w-3.5" /> Phone Number
               </Label>
-              <Select
-                value={profile.interest}
-                onValueChange={(v) => setProfile(p => ({ ...p, interest: v }))}
-              >
-                <SelectTrigger className="bg-white/5 border-white/10 text-white h-11 focus:ring-pink-500/40">
-                  <SelectValue placeholder="Select interest" />
-                </SelectTrigger>
-                <SelectContent className="bg-zinc-950 border-white/10 text-white rounded-xl">
-                  <SelectItem value="Cricket" className="focus:bg-pink-500/20">Cricket</SelectItem>
-                  <SelectItem value="Movies" className="focus:bg-pink-500/20">Movies</SelectItem>
-                  <SelectItem value="Both" className="focus:bg-pink-500/20">Both</SelectItem>
-                </SelectContent>
-              </Select>
+              <Input
+                type="tel"
+                value={profile.phone}
+                onChange={(e) => setProfile(p => ({ ...p, phone: e.target.value }))}
+                placeholder="+91 9999999999"
+                className="bg-white/5 border-white/10 text-white placeholder:text-white/30 focus-visible:ring-pink-500/40 h-11"
+              />
+              <p className="text-xs text-white/30">Used for WhatsApp booking confirmations.</p>
             </div>
 
             <Button
@@ -291,10 +287,7 @@ export default function Settings() {
                     onClick={() => setShowPwd(p => ({ ...p, [field]: !p[field] }))}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white transition"
                   >
-                    {showPwd[field]
-                      ? <EyeOff className="h-4 w-4" />
-                      : <Eye className="h-4 w-4" />
-                    }
+                    {showPwd[field] ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
               </div>
@@ -338,9 +331,7 @@ export default function Settings() {
               >
                 {t.icon}
                 <span className="text-xs font-semibold">{t.label}</span>
-                {theme === t.value && (
-                  <CheckCircle2 className="h-3.5 w-3.5 text-cyan-400" />
-                )}
+                {theme === t.value && <CheckCircle2 className="h-3.5 w-3.5 text-cyan-400" />}
               </button>
             ))}
           </div>

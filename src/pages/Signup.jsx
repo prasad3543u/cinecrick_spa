@@ -1,13 +1,10 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { Eye, EyeOff, Film, Trophy, User, Mail, Lock, Calendar, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Film, Trophy, User, Mail, Lock, Calendar, Phone, Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from "@/components/ui/select";
 import { api, setToken } from "../lib/api";
 
 function getPasswordStrength(pwd) {
@@ -26,7 +23,7 @@ function getPasswordStrength(pwd) {
 export default function Signup() {
   const navigate = useNavigate();
   const [showPwd, setShowPwd] = useState(false);
-  const [form, setForm] = useState({ name: "", email: "", password: "", dob: "", interest: "" });
+  const [form, setForm] = useState({ name: "", email: "", password: "", dob: "", phone: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -40,7 +37,7 @@ export default function Signup() {
 
   async function handleSubmit(e) {
     e.preventDefault();
-    if (!form.name || !form.email || !form.password || !form.dob || !form.interest) {
+    if (!form.name || !form.email || !form.password || !form.dob || !form.phone) {
       setError("Please fill all fields.");
       return;
     }
@@ -48,7 +45,6 @@ export default function Signup() {
       setError("Password must be at least 6 characters.");
       return;
     }
-
     try {
       setLoading(true);
       setError("");
@@ -60,7 +56,7 @@ export default function Signup() {
           password: form.password,
           password_confirmation: form.password,
           dob: form.dob,
-          interest: form.interest,
+          phone: form.phone.trim(),
         },
       });
       setToken(data.token);
@@ -176,7 +172,6 @@ export default function Signup() {
                   </button>
                 </div>
 
-                {/* Password strength */}
                 {form.password.length > 0 && (
                   <div className="space-y-1">
                     <div className="flex gap-1">
@@ -215,28 +210,22 @@ export default function Signup() {
                 />
               </div>
 
-              {/* Interest */}
+              {/* Phone */}
               <div className="space-y-1.5">
-                <Label className="text-white/80 text-sm">Your Interest</Label>
-                <Select
-                  value={form.interest}
-                  onValueChange={(value) => setForm((p) => ({ ...p, interest: value }))}
-                >
-                  <SelectTrigger className="bg-white/5 border-white/10 text-white focus:ring-pink-500/40 h-11">
-                    <SelectValue placeholder="Select your interest" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-zinc-950 backdrop-blur-xl border border-white/10 text-white rounded-xl shadow-2xl">
-                    <SelectItem value="Cricket" className="focus:bg-pink-500/20 focus:text-white">
-                      <span className="flex items-center gap-2"><Trophy className="h-4 w-4 text-pink-400" /> Cricket</span>
-                    </SelectItem>
-                    <SelectItem value="Movies" className="focus:bg-pink-500/20 focus:text-white">
-                      <span className="flex items-center gap-2"><Film className="h-4 w-4 text-violet-400" /> Movies</span>
-                    </SelectItem>
-                    <SelectItem value="Both" className="focus:bg-pink-500/20 focus:text-white">
-                      <span className="flex items-center gap-2">⚡ Both</span>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label className="text-white/80 text-sm flex items-center gap-1.5">
+                  <Phone className="h-3.5 w-3.5 text-yellow-400" /> Phone Number
+                </Label>
+                <Input
+                  name="phone"
+                  type="tel"
+                  placeholder="+91 9999999999"
+                  onChange={handleChange}
+                  value={form.phone}
+                  autoComplete="off"
+                  className="bg-white/5 border-white/10 text-white placeholder:text-white/30 focus-visible:ring-pink-500/40 h-11"
+                  required
+                />
+                <p className="text-xs text-white/30">Used for WhatsApp booking confirmations.</p>
               </div>
 
               {/* Submit */}
