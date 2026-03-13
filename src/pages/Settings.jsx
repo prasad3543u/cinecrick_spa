@@ -10,7 +10,8 @@ import { toast } from "sonner";
 import {
   User, Lock, Palette, Bell, Trash2,
   ArrowLeft, Loader2, Sun, Moon, Monitor,
-  Mail, Calendar, Heart, ShieldAlert, CheckCircle2
+  Mail, Calendar, Heart, ShieldAlert, CheckCircle2,
+  Eye, EyeOff
 } from "lucide-react";
 import {
   Select, SelectContent, SelectItem,
@@ -44,7 +45,9 @@ export default function Settings() {
         bookingCancelled: true,
         promotions: false,
       };
-    } catch { return { bookingCreated: true, bookingConfirmed: true, bookingCancelled: true, promotions: false }; }
+    } catch {
+      return { bookingCreated: true, bookingConfirmed: true, bookingCancelled: true, promotions: false };
+    }
   });
 
   // Danger Zone
@@ -71,7 +74,6 @@ export default function Settings() {
     load();
   }, [navigate]);
 
-  // ── Profile Save ──
   async function handleProfileSave(e) {
     e.preventDefault();
     if (!profile.name.trim()) { toast.error("Name cannot be empty."); return; }
@@ -89,7 +91,6 @@ export default function Settings() {
     }
   }
 
-  // ── Password Save ──
   async function handlePasswordSave(e) {
     e.preventDefault();
     if (!passwords.current || !passwords.newPwd || !passwords.confirm) {
@@ -121,14 +122,12 @@ export default function Settings() {
     }
   }
 
-  // ── Theme ──
   function handleThemeChange(value) {
     setTheme(value);
     localStorage.setItem("cinecrick_theme", value);
     toast.success(`Theme set to ${value}. Full theming coming soon!`);
   }
 
-  // ── Notifications ──
   function handleNotifToggle(key) {
     const updated = { ...notifications, [key]: !notifications[key] };
     setNotifications(updated);
@@ -136,7 +135,6 @@ export default function Settings() {
     toast.success("Notification preference saved.");
   }
 
-  // ── Delete Account ──
   async function handleDeleteAccount() {
     if (deleteConfirm !== user?.email) {
       toast.error("Email doesn't match. Please type your email exactly."); return;
@@ -162,6 +160,18 @@ export default function Settings() {
       </div>
     );
   }
+
+  const pwdLabels = {
+    current: "Current Password",
+    newPwd: "New Password",
+    confirm: "Confirm New Password",
+  };
+
+  const pwdPlaceholders = {
+    current: "Enter current password",
+    newPwd: "Min. 6 characters",
+    confirm: "Repeat new password",
+  };
 
   return (
     <div className="min-h-screen bg-[#070812] text-white px-4 sm:px-6 lg:px-20 py-8">
@@ -266,14 +276,14 @@ export default function Settings() {
             {["current", "newPwd", "confirm"].map((field) => (
               <div key={field} className="space-y-1.5">
                 <Label className="text-white/70 text-sm">
-                  {field === "current" ? "Current Password" : field === "newPwd" ? "New Password" : "Confirm New Password"}
+                  {pwdLabels[field]}
                 </Label>
                 <div className="relative">
                   <Input
                     type={showPwd[field] ? "text" : "password"}
                     value={passwords[field]}
                     onChange={(e) => setPasswords(p => ({ ...p, [field]: e.target.value }))}
-                    placeholder={field === "current" ? "Enter current password" : field === "newPwd" ? "Min. 6 characters" : "Repeat new password"}
+                    placeholder={pwdPlaceholders[field]}
                     className="bg-white/5 border-white/10 text-white placeholder:text-white/30 pr-11 h-11 focus-visible:ring-violet-500/40"
                   />
                   <button
@@ -281,7 +291,10 @@ export default function Settings() {
                     onClick={() => setShowPwd(p => ({ ...p, [field]: !p[field] }))}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white transition"
                   >
-                    {showPwd[field] ? "🙈" : "👁"}
+                    {showPwd[field]
+                      ? <EyeOff className="h-4 w-4" />
+                      : <Eye className="h-4 w-4" />
+                    }
                   </button>
                 </div>
               </div>
