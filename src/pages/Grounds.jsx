@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { GroundCardSkeleton } from "../components/Skeleton";
-import { Search, MapPin, SlidersHorizontal, X } from "lucide-react";
+import { Search, MapPin, SlidersHorizontal, X, ArrowUpDown } from "lucide-react";
 
 export default function Grounds() {
   const navigate = useNavigate();
@@ -15,8 +15,8 @@ export default function Grounds() {
 
   // Filters
   const [locationSearch, setLocationSearch] = useState("");
-  const [minPrice, setMinPrice] = useState("");
   const [maxPrice, setMaxPrice] = useState("");
+  const [sortOrder, setSortOrder] = useState("");
   const [showFilters, setShowFilters] = useState(false);
 
   useEffect(() => {
@@ -33,32 +33,47 @@ export default function Grounds() {
     loadGrounds();
   }, []);
 
-  // Instant filtering — runs on every keystroke
+  const prices = grounds.map((g) => parseFloat(g.price_per_hour) || 0);
+  const lowestPrice  = prices.length ? Math.min(...prices) : 0;
+  const highestPrice = prices.length ? Math.max(...prices) : 5000;
+
   const filtered = useMemo(() => {
-    return grounds.filter((g) => {
-      const matchLocation = locationSearch.trim() === "" ||
-        g.location?.toLowerCase().includes(locationSearch.toLowerCase());
-
+    let result = grounds.filter((g) => {
+      const locationMatch = () => {
+        if (!locationSearch.trim()) return true;
+        const searchWords = locationSearch.toLowerCase().trim().split(/\s+/);
+        const loc = (g.location || "").toLowerCase();
+        return searchWords.every((word) => loc.includes(word));
+      };
       const price = parseFloat(g.price_per_hour) || 0;
-      const matchMin = minPrice === "" || price >= parseFloat(minPrice);
-      const matchMax = maxPrice === "" || price <= parseFloat(maxPrice);
-
-      return matchLocation && matchMin && matchMax;
+      const matchPrice = maxPrice === "" || price <= parseFloat(maxPrice);
+      return locationMatch() && matchPrice;
     });
-  }, [grounds, locationSearch, minPrice, maxPrice]);
 
-  const hasActiveFilters = locationSearch || minPrice || maxPrice;
+    if (sortOrder === "asc") {
+      result = [...result].sort((a, b) =>
+        (parseFloat(a.price_per_hour) || 0) - (parseFloat(b.price_per_hour) || 0));
+    } else if (sortOrder === "desc") {
+      result = [...result].sort((a, b) =>
+        (parseFloat(b.price_per_hour) || 0) - (parseFloat(a.price_per_hour) || 0));
+    }
+
+    return result;
+  }, [grounds, locationSearch, maxPrice, sortOrder]);
+
+  const hasActiveFilters = locationSearch || maxPrice || sortOrder;
+  const activeFilterCount = [locationSearch, maxPrice, sortOrder].filter(Boolean).length;
 
   function clearFilters() {
     setLocationSearch("");
-    setMinPrice("");
     setMaxPrice("");
+    setSortOrder("");
   }
 
-  // Price range stats for placeholder hints
-  const prices = grounds.map((g) => parseFloat(g.price_per_hour) || 0);
-  const lowestPrice  = prices.length ? Math.min(...prices) : 0;
-  const highestPrice = prices.length ? Math.max(...prices) : 0;
+  function clearLocation() {
+    setLocationSearch("");
+    if (!maxPrice) setShowFilters(false);
+  }
 
   return (
     <div className="min-h-screen bg-[#070812] text-white px-4 sm:px-6 py-8 sm:py-10">
@@ -72,6 +87,9 @@ export default function Grounds() {
           {!loading && (
             <p className="text-white/40 text-sm mt-1">
               {filtered.length} of {grounds.length} grounds
+              {hasActiveFilters && (
+                <span className="ml-2 text-pink-400">— filtered</span>
+              )}
             </p>
           )}
         </div>
@@ -93,8 +111,10 @@ export default function Grounds() {
       {!loading && grounds.length > 0 && (
         <div className="mb-6 space-y-3">
 
-          {/* Location search + filter toggle */}
-          <div className="flex gap-3">
+          {/* Row 1 — location search + filter toggle + sort */}
+          <div className="flex gap-2 sm:gap-3">
+
+            {/* Location search */}
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/40" />
               <Input
@@ -105,7 +125,7 @@ export default function Grounds() {
               />
               {locationSearch && (
                 <button
-                  onClick={() => setLocationSearch("")}
+                  onClick={clearLocation}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-white/40 hover:text-white transition"
                 >
                   <X className="h-4 w-4" />
@@ -113,47 +133,69 @@ export default function Grounds() {
               )}
             </div>
 
+            {/* Filter toggle */}
             <Button
               onClick={() => setShowFilters(!showFilters)}
-              className={`h-11 px-4 flex items-center gap-2 border transition ${
-                showFilters || minPrice || maxPrice
+              className={`h-11 px-3 sm:px-4 flex items-center gap-2 border transition shrink-0 ${
+                showFilters || maxPrice
                   ? "bg-pink-500/20 border-pink-500/40 text-pink-300"
                   : "bg-white/5 border-white/10 text-white/60 hover:bg-white/10 hover:text-white"
               }`}
             >
-              <SlidersHorizontal className="h-4 w-4" />
-              <span className="hidden sm:inline">Price Filter</span>
-              {(minPrice || maxPrice) && (
-                <span className="ml-1 h-2 w-2 rounded-full bg-pink-400" />
+              <SlidersHorizontal className="h-4 w-4 shrink-0" />
+              <span className="text-sm">Filters</span>
+              {activeFilterCount > 0 && (
+                <span className="flex h-4 w-4 items-center justify-center rounded-full bg-pink-500 text-[10px] font-bold text-white">
+                  {activeFilterCount}
+                </span>
               )}
+            </Button>
+
+            {/* Sort button */}
+            <Button
+              onClick={() => setSortOrder(
+                sortOrder === "" ? "asc" : sortOrder === "asc" ? "desc" : ""
+              )}
+              className={`h-11 px-3 sm:px-4 flex items-center gap-2 border transition shrink-0 ${
+                sortOrder
+                  ? "bg-violet-500/20 border-violet-500/40 text-violet-300"
+                  : "bg-white/5 border-white/10 text-white/60 hover:bg-white/10 hover:text-white"
+              }`}
+            >
+              <ArrowUpDown className="h-4 w-4 shrink-0" />
+              <span className="text-sm">
+                {sortOrder === "asc" ? "Low to High" :
+                 sortOrder === "desc" ? "High to Low" : "Sort"}
+              </span>
             </Button>
           </div>
 
-          {/* Price range panel */}
+          {/* Price Slider Panel */}
           {showFilters && (
-            <div className="rounded-xl border border-white/10 bg-white/5 p-4 flex flex-wrap items-end gap-4">
-              <div className="space-y-1.5 flex-1 min-w-[120px]">
-                <label className="text-xs text-white/50">Min Price (₹/hr)</label>
-                <Input
-                  type="number"
-                  placeholder={`e.g. ${lowestPrice}`}
-                  value={minPrice}
-                  onChange={(e) => setMinPrice(e.target.value)}
-                  className="bg-black/40 border-white/10 text-white placeholder:text-white/20 h-10 focus-visible:ring-pink-500/40"
-                />
+            <div className="rounded-xl border border-white/10 bg-white/5 p-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold text-white/50 uppercase tracking-wide">
+                  Max Price per Hour
+                </label>
+                <span className="text-sm font-bold text-pink-400">
+                  {maxPrice ? `₹${maxPrice}` : `Up to ₹${highestPrice}`}
+                </span>
               </div>
-              <div className="space-y-1.5 flex-1 min-w-[120px]">
-                <label className="text-xs text-white/50">Max Price (₹/hr)</label>
-                <Input
-                  type="number"
-                  placeholder={`e.g. ${highestPrice}`}
-                  value={maxPrice}
-                  onChange={(e) => setMaxPrice(e.target.value)}
-                  className="bg-black/40 border-white/10 text-white placeholder:text-white/20 h-10 focus-visible:ring-pink-500/40"
-                />
-              </div>
-              <div className="text-xs text-white/30 self-center">
-                Range: ₹{lowestPrice} – ₹{highestPrice}/hr
+              <input
+                type="range"
+                min={lowestPrice}
+                max={highestPrice}
+                step={100}
+                value={maxPrice || highestPrice}
+                onChange={(e) => {
+                  const val = parseFloat(e.target.value);
+                  setMaxPrice(val >= highestPrice ? "" : String(val));
+                }}
+                className="w-full h-2 rounded-full appearance-none cursor-pointer bg-white/10 accent-pink-500"
+              />
+              <div className="flex justify-between text-xs text-white/30">
+                <span>₹{lowestPrice}</span>
+                <span>₹{highestPrice}</span>
               </div>
             </div>
           )}
@@ -161,26 +203,35 @@ export default function Grounds() {
           {/* Active filter tags */}
           {hasActiveFilters && (
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-xs text-white/40">Active filters:</span>
+              <span className="text-xs text-white/40">Active:</span>
+
               {locationSearch && (
                 <span className="flex items-center gap-1 rounded-full bg-pink-500/15 border border-pink-500/30 px-3 py-1 text-xs text-pink-300">
                   <MapPin className="h-3 w-3" /> {locationSearch}
-                  <button onClick={() => setLocationSearch("")} className="ml-1 hover:text-white">
+                  <button onClick={clearLocation} className="ml-1 hover:text-white">
                     <X className="h-3 w-3" />
                   </button>
                 </span>
               )}
-              {(minPrice || maxPrice) && (
+
+              {maxPrice && (
                 <span className="flex items-center gap-1 rounded-full bg-violet-500/15 border border-violet-500/30 px-3 py-1 text-xs text-violet-300">
-                  ₹{minPrice || "0"} – ₹{maxPrice || "any"}
-                  <button
-                    onClick={() => { setMinPrice(""); setMaxPrice(""); }}
-                    className="ml-1 hover:text-white"
-                  >
+                  Up to ₹{maxPrice}/hr
+                  <button onClick={() => setMaxPrice("")} className="ml-1 hover:text-white">
                     <X className="h-3 w-3" />
                   </button>
                 </span>
               )}
+
+              {sortOrder && (
+                <span className="flex items-center gap-1 rounded-full bg-yellow-500/15 border border-yellow-500/30 px-3 py-1 text-xs text-yellow-300">
+                  {sortOrder === "asc" ? "Price: Low to High" : "Price: High to Low"}
+                  <button onClick={() => setSortOrder("")} className="ml-1 hover:text-white">
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              )}
+
               <button
                 onClick={clearFilters}
                 className="text-xs text-white/30 hover:text-white underline transition"
@@ -203,7 +254,7 @@ export default function Grounds() {
               onClick={clearFilters}
               className="text-pink-400 hover:text-pink-300 underline text-sm transition"
             >
-              Clear filters
+              Clear all filters
             </button>
           </div>
         ) : (
