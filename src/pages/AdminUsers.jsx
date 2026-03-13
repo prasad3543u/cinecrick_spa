@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { Users, Search, ShieldCheck, User, BookOpen, Calendar } from "lucide-react";
+import { Users, Search, ShieldCheck, User, BookOpen, Calendar, Phone } from "lucide-react";
 
 export default function AdminUsers() {
   const navigate = useNavigate();
@@ -69,6 +69,7 @@ export default function AdminUsers() {
 
   return (
     <div className="min-h-screen bg-[#070812] text-white px-4 sm:px-6 py-6 sm:py-10">
+
       {/* Header */}
       <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-3xl sm:text-4xl font-black text-pink-400">Admin Users</h1>
@@ -148,6 +149,7 @@ export default function AdminUsers() {
               }`} />
               <CardContent className="p-4 sm:p-5">
                 <div className="flex flex-wrap items-start justify-between gap-3">
+
                   {/* User info */}
                   <div className="flex items-start gap-3 flex-1 min-w-0">
                     <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-gradient-to-br from-pink-500/30 to-violet-500/30 border border-white/10 font-black text-lg">
@@ -174,9 +176,10 @@ export default function AdminUsers() {
                           <Calendar className="h-3 w-3" />
                           Joined {new Date(user.created_at).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
                         </span>
-                        {user.interest && (
-                          <span className="text-pink-400">
-                            {user.interest}
+                        {user.phone && (
+                          <span className="flex items-center gap-1 text-emerald-400">
+                            <Phone className="h-3 w-3" />
+                            {user.phone}
                           </span>
                         )}
                       </div>
@@ -205,6 +208,7 @@ export default function AdminUsers() {
                       </Button>
                     )}
                   </div>
+
                 </div>
               </CardContent>
             </Card>
