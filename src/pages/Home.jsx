@@ -72,7 +72,9 @@ export default function Home() {
     if (item === "Profile") { navigate("/profile"); return; }
     if (item === "Admin Users") { navigate("/admin/users"); return; }
     if (item === "Settings") { navigate("/settings"); return; }
-    }
+    if (item === "Today's Matches") { navigate("/admin/today"); return; }
+    // Add more navigation rules as needed  
+  }
 
   const MENUS = useMemo(() => {
     const base = {
@@ -82,7 +84,7 @@ export default function Home() {
       News: ["Sports News", "Film News", "Trending", "Match Reports", "Box Office", "Interviews", "Reviews", "Rumours"],
       Events: ["Concerts", "Standup", "Theatre", "Festivals", "Kids", "Workshops", "Online", "Nearby"],
       Account: user?.role === "admin"
-        ? ["Profile", "Admin Dashboard", "Admin Users", "Admin Grounds", "Admin Bookings", "My Bookings", "Settings", "Logout"]
+        ? ["Profile", "Admin Dashboard", "Admin Users", "Admin Grounds", "Admin Bookings","Today's Matches" ,"My Bookings", "Settings", "Logout"]
         : ["Profile", "My Bookings", "Settings", "Logout"],
     };
     return base;
@@ -339,7 +341,7 @@ export default function Home() {
             <div className="mt-4 space-y-1 text-sm text-white">
               <p><span className="font-semibold text-pink-400">Email:</span> {user.email || "—"}</p>
               <p><span className="font-semibold text-pink-400">DOB:</span> {user.dob || "Not provided"}</p>
-              <p><span className="font-semibold text-pink-400">Interest:</span> {user.interest || "Not selected"}</p>
+              <p><span className="font-semibold text-pink-400">Phone:</span> {user.phone || "Not provided"}</p>
               <p><span className="font-semibold text-pink-400">Role:</span> {user.role || "user"}</p>
             </div>
             <Separator className="my-5 bg-white/10" />

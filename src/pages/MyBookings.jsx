@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { BookingCardSkeleton } from "../components/Skeleton";
 import {
   CheckCircle, Clock, XCircle, Calendar,
-  MapPin, CreditCard, AlertTriangle
+  MapPin, CreditCard, AlertTriangle, Phone, User, Droplets, Circle
 } from "lucide-react";
 
 export default function MyBookings() {
@@ -18,14 +18,11 @@ export default function MyBookings() {
   const [cancelError, setCancelError] = useState("");
   const [cancelSuccess, setCancelSuccess] = useState("");
 
-  useEffect(() => {
-    loadBookings();
-  }, []);
+  useEffect(() => { loadBookings(); }, []);
 
   async function loadBookings() {
     try {
-      setLoading(true);
-      setError("");
+      setLoading(true); setError("");
       const data = await api("/bookings");
       setBookings(Array.isArray(data) ? data : []);
     } catch (err) {
@@ -40,11 +37,8 @@ export default function MyBookings() {
       "Are you sure you want to cancel?\n\nNo refund will be provided on cancellation."
     );
     if (!confirmed) return;
-
     try {
-      setCancellingId(bookingId);
-      setCancelError("");
-      setCancelSuccess("");
+      setCancellingId(bookingId); setCancelError(""); setCancelSuccess("");
       await api(`/bookings/${bookingId}/cancel`, { method: "PATCH" });
       setCancelSuccess("Booking cancelled. No refund will be issued.");
       await loadBookings();
@@ -66,20 +60,17 @@ export default function MyBookings() {
 
       {error && (
         <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-red-300 text-sm flex items-center gap-2">
-          <XCircle className="h-4 w-4 shrink-0" />
-          {error}
+          <XCircle className="h-4 w-4 shrink-0" />{error}
         </div>
       )}
       {cancelSuccess && (
         <div className="mb-4 rounded-xl border border-yellow-500/30 bg-yellow-500/10 px-4 py-3 text-yellow-300 text-sm flex items-center gap-2">
-          <AlertTriangle className="h-4 w-4 shrink-0" />
-          {cancelSuccess}
+          <AlertTriangle className="h-4 w-4 shrink-0" />{cancelSuccess}
         </div>
       )}
       {cancelError && (
         <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-red-300 text-sm flex items-center gap-2">
-          <XCircle className="h-4 w-4 shrink-0" />
-          {cancelError}
+          <XCircle className="h-4 w-4 shrink-0" />{cancelError}
         </div>
       )}
 
@@ -89,19 +80,15 @@ export default function MyBookings() {
         ) : bookings.length === 0 ? (
           <div className="rounded-2xl border border-white/10 bg-zinc-950/55 p-10 text-center">
             <p className="text-white/50 text-lg">No bookings yet.</p>
-            <Button
-              onClick={() => navigate("/grounds")}
-              className="mt-4 bg-gradient-to-r from-pink-500 to-violet-500"
-            >
+            <Button onClick={() => navigate("/grounds")}
+              className="mt-4 bg-gradient-to-r from-pink-500 to-violet-500">
               Browse Grounds
             </Button>
           </div>
         ) : (
           bookings.map((booking) => (
-            <Card
-              key={booking.id}
-              className="border-white/10 bg-zinc-950/55 shadow-[0_20px_60px_rgba(0,0,0,.55)] overflow-hidden"
-            >
+            <Card key={booking.id}
+              className="border-white/10 bg-zinc-950/55 shadow-[0_20px_60px_rgba(0,0,0,.55)] overflow-hidden">
               <div className={`h-1 w-full ${
                 booking.status === "confirmed" ? "bg-gradient-to-r from-green-500 to-emerald-400" :
                 booking.status === "cancelled" ? "bg-gradient-to-r from-red-500 to-rose-400" :
@@ -124,9 +111,7 @@ export default function MyBookings() {
                     booking.status === "confirmed" ? "bg-green-500/20 text-green-300 border border-green-500/30" :
                     booking.status === "cancelled" ? "bg-red-500/20 text-red-300 border border-red-500/30" :
                     "bg-yellow-500/20 text-yellow-300 border border-yellow-500/30"
-                  }`}>
-                    {booking.status?.toUpperCase()}
-                  </span>
+                  }`}>{booking.status?.toUpperCase()}</span>
                 </div>
 
                 {/* Details grid */}
@@ -161,14 +146,83 @@ export default function MyBookings() {
                   <p>Payment: <span className="text-white/80">{booking.payment_status || "--"}</span></p>
                 </div>
 
+                {/* Staff details — only on confirmed bookings with staff assigned */}
+                {booking.status === "confirmed" && (booking.umpire_name || booking.groundsman_name) && (
+                  <div className="mb-4 rounded-xl border border-violet-500/20 bg-violet-500/5 p-4 space-y-3">
+                    <p className="text-xs font-bold text-violet-300 uppercase tracking-wide">Match Day Staff</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {booking.umpire_name && (
+                        <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-3 py-2">
+                          <User className="h-4 w-4 text-violet-400 shrink-0" />
+                          <div className="min-w-0">
+                            <p className="text-xs text-white/40">Umpire</p>
+                            <p className="text-sm font-semibold">{booking.umpire_name}</p>
+                            {booking.umpire_phone && (
+                              <a href={`tel:${booking.umpire_phone}`}
+                                className="text-xs text-emerald-400 flex items-center gap-1 hover:text-emerald-300 transition">
+                                <Phone className="h-3 w-3" />{booking.umpire_phone}
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      {booking.groundsman_name && (
+                        <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-3 py-2">
+                          <User className="h-4 w-4 text-cyan-400 shrink-0" />
+                          <div className="min-w-0">
+                            <p className="text-xs text-white/40">Groundsman</p>
+                            <p className="text-sm font-semibold">{booking.groundsman_name}</p>
+                            {booking.groundsman_phone && (
+                              <a href={`tel:${booking.groundsman_phone}`}
+                                className="text-xs text-emerald-400 flex items-center gap-1 hover:text-emerald-300 transition">
+                                <Phone className="h-3 w-3" />{booking.groundsman_phone}
+                              </a>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Match day status — only confirmed */}
+                {booking.status === "confirmed" && (
+                  <div className="mb-4 rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-4">
+                    <p className="text-xs font-bold text-cyan-300 uppercase tracking-wide mb-3">
+                      Match Day Checklist
+                    </p>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      {[
+                        { field: "umpire_reached", label: "Umpire Ready", icon: <User className="h-4 w-4" /> },
+                        { field: "water_arranged", label: "Water Ready", icon: <Droplets className="h-4 w-4" /> },
+                        { field: "balls_ready",    label: "Balls Ready", icon: <Circle className="h-4 w-4" /> },
+                        { field: "ground_ready",   label: "Ground Ready", icon: <CheckCircle className="h-4 w-4" /> },
+                      ].map(({ field, label, icon }) => (
+                        <div key={field}
+                          className={`flex flex-col items-center gap-1 rounded-xl border p-3 text-xs font-semibold ${
+                            booking[field]
+                              ? "bg-green-500/15 border-green-500/30 text-green-300"
+                              : "bg-white/5 border-white/10 text-white/30"
+                          }`}>
+                          <span className={booking[field] ? "text-green-400" : "text-white/20"}>
+                            {icon}
+                          </span>
+                          {label}
+                          <span className="text-[10px]">{booking[field] ? "Done" : "Pending"}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* Timeline */}
                 <div className="mb-4">
                   <p className="text-xs text-white/40 uppercase tracking-widest mb-3">Booking Timeline</p>
                   <div className="flex items-center">
                     <TimelineStep icon={<CheckCircle className="h-3 w-3 sm:h-4 sm:w-4" />} label="Created" active={true} color="pink" />
                     <TimelineLine active={true} />
-                    <TimelineStep icon={<Clock className="h-3 w-3 sm:h-4 sm:w-4" />} label="Pending" active={["pending", "confirmed", "cancelled"].includes(booking.status)} color="yellow" />
-                    <TimelineLine active={["confirmed", "cancelled"].includes(booking.status)} />
+                    <TimelineStep icon={<Clock className="h-3 w-3 sm:h-4 sm:w-4" />} label="Pending" active={["pending","confirmed","cancelled"].includes(booking.status)} color="yellow" />
+                    <TimelineLine active={["confirmed","cancelled"].includes(booking.status)} />
                     {booking.status === "cancelled" ? (
                       <TimelineStep icon={<XCircle className="h-3 w-3 sm:h-4 sm:w-4" />} label="Cancelled" active={true} color="red" />
                     ) : (
@@ -182,13 +236,11 @@ export default function MyBookings() {
                   <div>
                     <div className="mb-3 rounded-xl border border-yellow-500/20 bg-yellow-500/5 px-3 py-2 text-xs text-yellow-300 flex items-center gap-2">
                       <AlertTriangle className="h-3 w-3 shrink-0" />
-                      Once confirmed by admin, cancellation is not allowed. No refund on cancellation.
+                      Once confirmed by admin, cancellation is not allowed.
                     </div>
-                    <Button
-                      onClick={() => handleCancel(booking.id)}
+                    <Button onClick={() => handleCancel(booking.id)}
                       disabled={cancellingId === booking.id}
-                      className="w-full sm:w-auto bg-red-500/20 border border-red-500/30 text-red-300 hover:bg-red-500/30 text-sm"
-                    >
+                      className="w-full sm:w-auto bg-red-500/20 border border-red-500/30 text-red-300 hover:bg-red-500/30 text-sm">
                       {cancellingId === booking.id ? "Cancelling..." : "Cancel Booking"}
                     </Button>
                   </div>
@@ -218,10 +270,10 @@ export default function MyBookings() {
 
 function TimelineStep({ icon, label, active, color }) {
   const colors = {
-    pink: active ? "bg-pink-500 border-pink-500 text-white" : "bg-white/5 border-white/10 text-white/30",
+    pink:   active ? "bg-pink-500 border-pink-500 text-white"   : "bg-white/5 border-white/10 text-white/30",
     yellow: active ? "bg-yellow-500 border-yellow-500 text-black" : "bg-white/5 border-white/10 text-white/30",
-    green: active ? "bg-green-500 border-green-500 text-white" : "bg-white/5 border-white/10 text-white/30",
-    red: active ? "bg-red-500 border-red-500 text-white" : "bg-white/5 border-white/10 text-white/30",
+    green:  active ? "bg-green-500 border-green-500 text-white"  : "bg-white/5 border-white/10 text-white/30",
+    red:    active ? "bg-red-500 border-red-500 text-white"      : "bg-white/5 border-white/10 text-white/30",
   };
   return (
     <div className="flex flex-col items-center gap-1">

@@ -9,12 +9,12 @@ import AdminGrounds from "./pages/AdminGrounds";
 import AdminSlots from "./pages/AdminSlots";
 import AdminBookings from "./pages/AdminBookings";
 import AdminDashboard from "./pages/AdminDashboard";
+import AdminToday from "./pages/AdminToday";
 import UserProfile from "./pages/UserProfile";
 import PrivateRoute from "./components/PrivateRoute";
 import AdminRoute from "./components/AdminRoute";
 import AdminUsers from "./pages/AdminUsers";
-import Settings from "./pages/Settings";  
-
+import Settings from "./pages/Settings";
 
 export default function App() {
   return (
@@ -28,11 +28,14 @@ export default function App() {
       <Route path="/my-bookings" element={<PrivateRoute><MyBookings /></PrivateRoute>} />
       <Route path="/profile" element={<PrivateRoute><UserProfile /></PrivateRoute>} />
       <Route path="/settings" element={<PrivateRoute><Settings /></PrivateRoute>} />
+
       <Route path="/admin/dashboard" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
       <Route path="/admin/grounds" element={<AdminRoute><AdminGrounds /></AdminRoute>} />
       <Route path="/admin/slots" element={<AdminRoute><AdminSlots /></AdminRoute>} />
       <Route path="/admin/bookings" element={<AdminRoute><AdminBookings /></AdminRoute>} />
       <Route path="/admin/users" element={<AdminRoute><AdminUsers /></AdminRoute>} />
+      <Route path="/admin/today" element={<AdminRoute><AdminToday /></AdminRoute>} />
+
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
