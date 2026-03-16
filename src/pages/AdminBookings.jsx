@@ -31,7 +31,7 @@ Price: Rs.${booking.total_price || ""}
 Match Type: ${booking.match_type || ""}
 
 Umpire: ${booking.umpire_name || "Will be assigned"}${booking.umpire_phone ? ` - ${booking.umpire_phone}` : ""}
-Groundsman: ${booking.groundsman_name || "Will be assigned"}
+Groundsman: ${booking.groundsman_name || "Will be assigned"}${booking.groundsman_phone ? ` - ${booking.groundsman_phone}` : ""}
 
 Please arrive 10 minutes before your slot.
 Thank you for booking with CineCrick!`;
