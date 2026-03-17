@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { Eye, EyeOff, LogIn, KeyRound, Mail, Loader2 } from "lucide-react";
+import { Eye, EyeOff, LogIn, KeyRound, Mail, Loader2, Trophy } from "lucide-react";
 
 import { api, setToken, getToken } from "../lib/api";
 import { Button } from "@/components/ui/button";
@@ -92,28 +92,33 @@ export default function Login() {
   return (
     <div className="relative min-h-screen text-white overflow-hidden">
 
-      {/* Background — cricket left, movies right */}
-      <div className="absolute left-0 top-0 h-full w-1/2 hidden lg:block">
+      {/* Background — full cricket */}
+      <div className="absolute inset-0">
         <div className="h-full w-full bg-[url('/cricket.jpg')] bg-cover bg-center scale-105 animate-[slowZoom_20s_linear_infinite]" />
-        <div className="absolute inset-0 bg-gradient-to-r from-black/70 to-transparent" />
+        <div className="absolute inset-0 bg-black/70" />
       </div>
-      <div className="absolute right-0 top-0 h-full w-1/2 hidden lg:block">
-        <div className="h-full w-full bg-[url('/movies.jpg')] bg-cover bg-center scale-105 animate-[slowZoom_20s_linear_infinite]" />
-        <div className="absolute inset-0 bg-gradient-to-l from-black/70 to-transparent" />
-      </div>
-      <div className="absolute inset-0 bg-gradient-to-b from-[#0b1220]/90 via-[#0f172a]/95 to-[#0b1220]/95" />
 
       {/* Grid overlay */}
       <div className="pointer-events-none absolute inset-0 opacity-[0.06] bg-[linear-gradient(to_right,white_1px,transparent_1px),linear-gradient(to_bottom,white_1px,transparent_1px)] bg-[size:60px_60px]" />
 
+      {/* Green glow */}
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(900px_420px_at_50%_0%,rgba(16,185,129,.18),transparent_60%)]" />
+
       {/* Logo */}
-      <h1 className="relative z-20 pt-8 text-center text-5xl font-extrabold tracking-tight text-pink-500 drop-shadow-[0_0_20px_rgba(236,72,153,0.8)]">
-        CineCrick
-      </h1>
-      <p className="relative z-20 text-center text-white/50 text-sm mt-1 flex items-center justify-center gap-2">
-        <Mail className="h-3.5 w-3.5" />
-        Movies + Cricket in one place
-      </p>
+      <div className="relative z-20 pt-10 flex flex-col items-center">
+        <div className="flex items-center gap-3 mb-2">
+          <div className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-green-500 to-emerald-600 font-black text-lg shadow-[0_16px_35px_rgba(16,185,129,.4)]">
+            C
+          </div>
+          <h1 className="text-5xl font-extrabold tracking-tight text-emerald-400 drop-shadow-[0_0_20px_rgba(16,185,129,0.8)]">
+            CrickOps
+          </h1>
+        </div>
+        <p className="text-white/50 text-sm flex items-center gap-2">
+          <Trophy className="h-3.5 w-3.5 text-emerald-400" />
+          Cricket Ground Management Platform
+        </p>
+      </div>
 
       {/* Card */}
       <div className="relative z-20 flex items-center justify-center px-4 py-10">
@@ -121,7 +126,7 @@ export default function Login() {
           <CardContent className="p-8">
             <div className="mb-6">
               <h2 className="text-2xl font-black">Welcome back</h2>
-              <p className="text-sm text-white/60 mt-1">Login to continue to CineCrick.</p>
+              <p className="text-sm text-white/60 mt-1">Login to continue to CrickOps.</p>
             </div>
 
             {error && (
@@ -134,7 +139,9 @@ export default function Login() {
             <form onSubmit={handleSubmit} className="space-y-5" autoComplete="off">
               {/* Email */}
               <div className="space-y-1.5">
-                <Label className="text-white/80 text-sm">Email</Label>
+                <Label className="text-white/80 text-sm flex items-center gap-1.5">
+                  <Mail className="h-3.5 w-3.5 text-emerald-400" /> Email
+                </Label>
                 <Input
                   name="email"
                   type="email"
@@ -142,14 +149,16 @@ export default function Login() {
                   onChange={handleChange}
                   placeholder="Enter your email"
                   autoComplete="new-email"
-                  className="bg-white/5 border-white/10 text-white placeholder:text-white/30 focus-visible:ring-pink-500/40 h-11"
+                  className="bg-white/5 border-white/10 text-white placeholder:text-white/30 focus-visible:ring-emerald-500/40 h-11"
                   required
                 />
               </div>
 
               {/* Password */}
               <div className="space-y-1.5">
-                <Label className="text-white/80 text-sm">Password</Label>
+                <Label className="text-white/80 text-sm flex items-center gap-1.5">
+                  <KeyRound className="h-3.5 w-3.5 text-emerald-400" /> Password
+                </Label>
                 <div className="relative">
                   <Input
                     name="password"
@@ -158,7 +167,7 @@ export default function Login() {
                     onChange={handleChange}
                     placeholder="Enter your password"
                     autoComplete="new-password"
-                    className="bg-white/5 border-white/10 text-white placeholder:text-white/30 focus-visible:ring-pink-500/40 pr-11 h-11"
+                    className="bg-white/5 border-white/10 text-white placeholder:text-white/30 focus-visible:ring-emerald-500/40 pr-11 h-11"
                     required
                   />
                   <button
@@ -184,7 +193,7 @@ export default function Login() {
                 <button
                   type="button"
                   onClick={openForgotDialog}
-                  className="text-sm text-pink-400 hover:text-pink-300 hover:underline transition"
+                  className="text-sm text-emerald-400 hover:text-emerald-300 hover:underline transition"
                 >
                   Forgot password?
                 </button>
@@ -194,7 +203,7 @@ export default function Login() {
               <Button
                 type="submit"
                 disabled={loading}
-                className="w-full h-11 bg-gradient-to-r from-pink-500 to-violet-500 font-bold hover:opacity-95 transition disabled:opacity-60 text-base"
+                className="w-full h-11 bg-gradient-to-r from-green-500 to-emerald-600 font-bold hover:opacity-95 transition disabled:opacity-60 text-base"
               >
                 {loading
                   ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Logging in...</>
@@ -204,7 +213,7 @@ export default function Login() {
 
               <p className="text-sm text-white/60 text-center">
                 New user?{" "}
-                <Link className="text-pink-400 hover:text-pink-300 font-semibold transition" to="/signup">
+                <Link className="text-emerald-400 hover:text-emerald-300 font-semibold transition" to="/signup">
                   Create account
                 </Link>
               </p>
@@ -218,7 +227,7 @@ export default function Login() {
         <DialogContent className="sm:max-w-md bg-zinc-950 text-white border-white/10">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <KeyRound className="h-5 w-5 text-pink-400" />
+              <KeyRound className="h-5 w-5 text-emerald-400" />
               Forgot password
             </DialogTitle>
             <DialogDescription className="text-white/55">
@@ -238,13 +247,16 @@ export default function Login() {
                 Remembered email: <span className="text-white/80 font-semibold">{savedEmailHint}</span>
               </p>
             )}
-            {forgotMsg && <p className="text-sm text-pink-300 mt-1">{forgotMsg}</p>}
+            {forgotMsg && <p className="text-sm text-emerald-300 mt-1">{forgotMsg}</p>}
           </div>
           <DialogFooter className="gap-2">
-            <Button variant="secondary" className="bg-white/10 border border-white/10 text-white hover:bg-white/15" onClick={() => setOpenForgot(false)} type="button">
+            <Button variant="secondary"
+              className="bg-white/10 border border-white/10 text-white hover:bg-white/15"
+              onClick={() => setOpenForgot(false)} type="button">
               Close
             </Button>
-            <Button onClick={handleForgotSend} className="bg-gradient-to-r from-pink-500 to-violet-500 font-bold" type="button">
+            <Button onClick={handleForgotSend}
+              className="bg-gradient-to-r from-green-500 to-emerald-600 font-bold" type="button">
               Send reset link
             </Button>
           </DialogFooter>
@@ -253,13 +265,13 @@ export default function Login() {
 
       <style>{`
         @keyframes slowZoom {
-          0% { transform: scale(1.05); }
-          50% { transform: scale(1.1); }
+          0%   { transform: scale(1.05); }
+          50%  { transform: scale(1.1);  }
           100% { transform: scale(1.05); }
         }
         @keyframes fadeUp {
-          0% { opacity: 0; transform: translateY(30px); }
-          100% { opacity: 1; transform: translateY(0); }
+          0%   { opacity: 0; transform: translateY(30px); }
+          100% { opacity: 1; transform: translateY(0);    }
         }
         .animate-fadeUp { animation: fadeUp 0.8s ease forwards; }
         input:-webkit-autofill,

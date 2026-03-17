@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { Eye, EyeOff, Film, Trophy, User, Mail, Lock, Calendar, Phone, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Trophy, User, Mail, Lock, Calendar, Phone, Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,10 +14,10 @@ function getPasswordStrength(pwd) {
   if (/[A-Z]/.test(pwd)) score++;
   if (/[0-9]/.test(pwd)) score++;
   if (/[^A-Za-z0-9]/.test(pwd)) score++;
-  if (score <= 1) return { score, label: "Weak", color: "bg-red-500" };
-  if (score === 2) return { score, label: "Fair", color: "bg-yellow-500" };
-  if (score === 3) return { score, label: "Good", color: "bg-blue-500" };
-  return { score, label: "Strong", color: "bg-green-500" };
+  if (score <= 1) return { score, label: "Weak",   color: "bg-red-500" };
+  if (score === 2) return { score, label: "Fair",   color: "bg-yellow-500" };
+  if (score === 3) return { score, label: "Good",   color: "bg-blue-500" };
+  return             { score, label: "Strong", color: "bg-green-500" };
 }
 
 export default function Signup() {
@@ -38,16 +38,13 @@ export default function Signup() {
   async function handleSubmit(e) {
     e.preventDefault();
     if (!form.name || !form.email || !form.password || !form.dob || !form.phone) {
-      setError("Please fill all fields.");
-      return;
+      setError("Please fill all fields."); return;
     }
     if (form.password.length < 6) {
-      setError("Password must be at least 6 characters.");
-      return;
+      setError("Password must be at least 6 characters."); return;
     }
     try {
-      setLoading(true);
-      setError("");
+      setLoading(true); setError("");
       const data = await api("/auth/signup", {
         method: "POST",
         body: {
@@ -73,27 +70,29 @@ export default function Signup() {
   return (
     <div className="relative min-h-screen overflow-hidden text-white">
 
-      {/* Background */}
-      <div className="absolute left-0 top-0 h-full w-1/2 hidden lg:block">
+      {/* Background — full cricket */}
+      <div className="absolute inset-0">
         <div className="h-full w-full bg-[url('/cricket.jpg')] bg-cover bg-center scale-105 animate-[slowZoom_20s_linear_infinite]" />
-        <div className="absolute inset-0 bg-gradient-to-r from-black/70 to-transparent" />
+        <div className="absolute inset-0 bg-black/70" />
       </div>
-      <div className="absolute right-0 top-0 h-full w-1/2 hidden lg:block">
-        <div className="h-full w-full bg-[url('/movies.jpg')] bg-cover bg-center scale-105 animate-[slowZoom_20s_linear_infinite]" />
-        <div className="absolute inset-0 bg-gradient-to-l from-black/70 to-transparent" />
-      </div>
-      <div className="absolute inset-0 bg-gradient-to-b from-[#0b1220]/90 via-[#0f172a]/95 to-[#0b1220]/95" />
       <div className="pointer-events-none absolute inset-0 opacity-[0.06] bg-[linear-gradient(to_right,white_1px,transparent_1px),linear-gradient(to_bottom,white_1px,transparent_1px)] bg-[size:60px_60px]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(900px_420px_at_50%_0%,rgba(16,185,129,.18),transparent_60%)]" />
 
       {/* Logo */}
-      <h1 className="relative z-20 pt-8 text-center text-5xl font-extrabold tracking-tight text-pink-500 drop-shadow-[0_0_20px_rgba(236,72,153,0.8)]">
-        CineCrick
-      </h1>
-      <p className="relative z-20 text-center text-white/50 text-sm mt-1 flex items-center justify-center gap-2">
-        <Film className="h-3.5 w-3.5" /> Movies
-        <span className="text-white/30">+</span>
-        <Trophy className="h-3.5 w-3.5" /> Cricket in one place
-      </p>
+      <div className="relative z-20 pt-8 flex flex-col items-center">
+        <div className="flex items-center gap-3 mb-2">
+          <div className="grid h-11 w-11 place-items-center rounded-2xl bg-gradient-to-br from-green-500 to-emerald-600 font-black text-lg shadow-[0_16px_35px_rgba(16,185,129,.4)]">
+            C
+          </div>
+          <h1 className="text-4xl font-extrabold tracking-tight text-emerald-400 drop-shadow-[0_0_20px_rgba(16,185,129,0.8)]">
+            CrickOps
+          </h1>
+        </div>
+        <p className="text-white/50 text-sm flex items-center gap-2">
+          <Trophy className="h-3.5 w-3.5 text-emerald-400" />
+          Cricket Ground Management Platform
+        </p>
+      </div>
 
       {/* Card */}
       <div className="relative z-20 flex items-center justify-center px-4 py-8">
@@ -101,7 +100,7 @@ export default function Signup() {
           <CardContent className="p-8">
             <div className="mb-6">
               <h2 className="text-2xl font-black">Create Account</h2>
-              <p className="text-sm text-white/50 mt-1">Join CineCrick today — it's free.</p>
+              <p className="text-sm text-white/50 mt-1">Join CrickOps today — it's free.</p>
             </div>
 
             {error && (
@@ -116,79 +115,53 @@ export default function Signup() {
               {/* Name */}
               <div className="space-y-1.5">
                 <Label className="text-white/80 text-sm flex items-center gap-1.5">
-                  <User className="h-3.5 w-3.5 text-pink-400" /> Full Name
+                  <User className="h-3.5 w-3.5 text-emerald-400" /> Full Name
                 </Label>
-                <Input
-                  name="name"
-                  type="text"
-                  placeholder="Your full name"
-                  onChange={handleChange}
-                  value={form.name}
-                  autoComplete="off"
-                  className="bg-white/5 border-white/10 text-white placeholder:text-white/30 focus-visible:ring-pink-500/40 h-11"
-                  required
-                />
+                <Input name="name" type="text" placeholder="Your full name"
+                  onChange={handleChange} value={form.name} autoComplete="off"
+                  className="bg-white/5 border-white/10 text-white placeholder:text-white/30 focus-visible:ring-emerald-500/40 h-11"
+                  required />
               </div>
 
               {/* Email */}
               <div className="space-y-1.5">
                 <Label className="text-white/80 text-sm flex items-center gap-1.5">
-                  <Mail className="h-3.5 w-3.5 text-violet-400" /> Email Address
+                  <Mail className="h-3.5 w-3.5 text-emerald-400" /> Email Address
                 </Label>
-                <Input
-                  name="email"
-                  type="email"
-                  placeholder="you@example.com"
-                  onChange={handleChange}
-                  value={form.email}
-                  autoComplete="off"
-                  className="bg-white/5 border-white/10 text-white placeholder:text-white/30 focus-visible:ring-pink-500/40 h-11"
-                  required
-                />
+                <Input name="email" type="email" placeholder="you@example.com"
+                  onChange={handleChange} value={form.email} autoComplete="off"
+                  className="bg-white/5 border-white/10 text-white placeholder:text-white/30 focus-visible:ring-emerald-500/40 h-11"
+                  required />
               </div>
 
               {/* Password */}
               <div className="space-y-1.5">
                 <Label className="text-white/80 text-sm flex items-center gap-1.5">
-                  <Lock className="h-3.5 w-3.5 text-cyan-400" /> Password
+                  <Lock className="h-3.5 w-3.5 text-emerald-400" /> Password
                 </Label>
                 <div className="relative">
-                  <Input
-                    name="password"
-                    type={showPwd ? "text" : "password"}
-                    placeholder="Min. 6 characters"
-                    onChange={handleChange}
-                    value={form.password}
-                    autoComplete="new-password"
-                    className="bg-white/5 border-white/10 text-white placeholder:text-white/30 focus-visible:ring-pink-500/40 pr-11 h-11"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPwd(!showPwd)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white transition"
-                  >
+                  <Input name="password" type={showPwd ? "text" : "password"}
+                    placeholder="Min. 6 characters" onChange={handleChange}
+                    value={form.password} autoComplete="new-password"
+                    className="bg-white/5 border-white/10 text-white placeholder:text-white/30 focus-visible:ring-emerald-500/40 pr-11 h-11"
+                    required />
+                  <button type="button" onClick={() => setShowPwd(!showPwd)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-white/50 hover:text-white transition">
                     {showPwd ? <EyeOff size={18} /> : <Eye size={18} />}
                   </button>
                 </div>
-
                 {form.password.length > 0 && (
                   <div className="space-y-1">
                     <div className="flex gap-1">
                       {[1, 2, 3, 4].map((i) => (
-                        <div
-                          key={i}
-                          className={`h-1 flex-1 rounded-full transition-all duration-300 ${
-                            i <= strength.score ? strength.color : "bg-white/10"
-                          }`}
-                        />
+                        <div key={i} className={`h-1 flex-1 rounded-full transition-all duration-300 ${
+                          i <= strength.score ? strength.color : "bg-white/10"}`} />
                       ))}
                     </div>
                     <p className={`text-xs ${
-                      strength.label === "Weak" ? "text-red-400" :
-                      strength.label === "Fair" ? "text-yellow-400" :
-                      strength.label === "Good" ? "text-blue-400" : "text-green-400"
-                    }`}>
+                      strength.label === "Weak"   ? "text-red-400"    :
+                      strength.label === "Fair"   ? "text-yellow-400" :
+                      strength.label === "Good"   ? "text-blue-400"   : "text-green-400"}`}>
                       Password strength: {strength.label}
                     </p>
                   </div>
@@ -200,40 +173,26 @@ export default function Signup() {
                 <Label className="text-white/80 text-sm flex items-center gap-1.5">
                   <Calendar className="h-3.5 w-3.5 text-emerald-400" /> Date of Birth
                 </Label>
-                <Input
-                  type="date"
-                  name="dob"
-                  onChange={handleChange}
-                  value={form.dob}
-                  className="bg-white/5 border-white/10 text-white focus-visible:ring-pink-500/40 h-11 [color-scheme:dark]"
-                  required
-                />
+                <Input type="date" name="dob" onChange={handleChange} value={form.dob}
+                  className="bg-white/5 border-white/10 text-white focus-visible:ring-emerald-500/40 h-11 [color-scheme:dark]"
+                  required />
               </div>
 
               {/* Phone */}
               <div className="space-y-1.5">
                 <Label className="text-white/80 text-sm flex items-center gap-1.5">
-                  <Phone className="h-3.5 w-3.5 text-yellow-400" /> Phone Number
+                  <Phone className="h-3.5 w-3.5 text-emerald-400" /> Phone Number
                 </Label>
-                <Input
-                  name="phone"
-                  type="tel"
-                  placeholder="+91 9999999999"
-                  onChange={handleChange}
-                  value={form.phone}
-                  autoComplete="off"
-                  className="bg-white/5 border-white/10 text-white placeholder:text-white/30 focus-visible:ring-pink-500/40 h-11"
-                  required
-                />
+                <Input name="phone" type="tel" placeholder="+91 9999999999"
+                  onChange={handleChange} value={form.phone} autoComplete="off"
+                  className="bg-white/5 border-white/10 text-white placeholder:text-white/30 focus-visible:ring-emerald-500/40 h-11"
+                  required />
                 <p className="text-xs text-white/30">Used for WhatsApp booking confirmations.</p>
               </div>
 
               {/* Submit */}
-              <Button
-                type="submit"
-                disabled={loading}
-                className="w-full h-11 bg-gradient-to-r from-pink-500 to-violet-500 font-bold hover:opacity-95 transition-all disabled:opacity-60 text-base mt-2"
-              >
+              <Button type="submit" disabled={loading}
+                className="w-full h-11 bg-gradient-to-r from-green-500 to-emerald-600 font-bold hover:opacity-95 transition-all disabled:opacity-60 text-base mt-2">
                 {loading
                   ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating account...</>
                   : "Get Started →"
@@ -242,13 +201,13 @@ export default function Signup() {
 
               <p className="text-sm text-white/60 text-center">
                 Already have an account?{" "}
-                <Link to="/" className="text-pink-400 hover:text-pink-300 font-semibold transition">
+                <Link to="/" className="text-emerald-400 hover:text-emerald-300 font-semibold transition">
                   Login
                 </Link>
               </p>
 
               <p className="text-center text-xs text-white/40">
-                By signing up, you agree to CineCrick Terms & Privacy Policy.
+                By signing up, you agree to CrickOps Terms & Privacy Policy.
               </p>
             </form>
           </CardContent>
@@ -257,13 +216,13 @@ export default function Signup() {
 
       <style>{`
         @keyframes slowZoom {
-          0% { transform: scale(1.05); }
-          50% { transform: scale(1.1); }
+          0%   { transform: scale(1.05); }
+          50%  { transform: scale(1.1);  }
           100% { transform: scale(1.05); }
         }
         @keyframes fadeUp {
-          0% { opacity: 0; transform: translateY(30px); }
-          100% { opacity: 1; transform: translateY(0); }
+          0%   { opacity: 0; transform: translateY(30px); }
+          100% { opacity: 1; transform: translateY(0);    }
         }
         .animate-fadeUp { animation: fadeUp 0.8s ease forwards; }
         input:-webkit-autofill,
