@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import {
   CheckCircle, Clock, MapPin, User,
-  MessageCircle, Phone, Droplets, Circle, Send
+  MessageCircle, Phone, Droplets, Circle, Send, ArrowLeft
 } from "lucide-react";
 
 function sendWhatsAppReminder(booking) {
@@ -99,11 +99,21 @@ export default function AdminToday() {
 
       {/* Header */}
       <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-3xl sm:text-4xl font-black text-pink-400">
-            Today's Matches
-          </h1>
-          <p className="text-white/40 text-sm mt-1">{today}</p>
+        <div className="flex items-center gap-3">
+          <Button
+            onClick={() => navigate("/")}
+            variant="ghost"
+            className="text-white/70 hover:text-white hover:bg-white/10 flex items-center gap-1 px-2"
+          >
+            <ArrowLeft className="h-5 w-5" />
+            <span className="hidden sm:inline">Home</span>
+          </Button>
+          <div>
+            <h1 className="text-3xl sm:text-4xl font-black text-pink-400">
+              Today's Matches
+            </h1>
+            <p className="text-white/40 text-sm mt-1">{today}</p>
+          </div>
         </div>
         <div className="flex flex-wrap gap-3">
           {bookings.length > 0 && (
