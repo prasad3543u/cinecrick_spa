@@ -4,6 +4,7 @@ import { api } from "../lib/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { EmptyAdminToday } from "@/components/EmptyState";
 import {
   CheckCircle, Clock, MapPin, User,
   MessageCircle, Phone, Droplets, Circle, Send, ArrowLeft
@@ -160,10 +161,7 @@ export default function AdminToday() {
           ))}
         </div>
       ) : bookings.length === 0 ? (
-        <div className="rounded-2xl border border-white/10 bg-zinc-950/55 p-16 text-center">
-          <p className="text-white/40 text-lg">No confirmed matches today.</p>
-          <p className="text-white/30 text-sm mt-2">Check back on match days.</p>
-        </div>
+          <EmptyAdminToday />
       ) : (
         <div className="grid gap-5">
           {bookings.map((booking) => {

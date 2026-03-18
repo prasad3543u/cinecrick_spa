@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AdminBookingCardSkeleton } from "../components/Skeleton";
 import { toast } from "sonner";
+import { ConfirmDialog } from "@/components/ConfirmDialog";     
+
 import {
   CheckCircle, XCircle, MapPin, Calendar,
   Clock, CreditCard, User, MessageCircle,
@@ -68,6 +70,8 @@ export default function AdminBookings() {
   const [cancellingId, setCancellingId] = useState(null);
   const [savingStaffId, setSavingStaffId] = useState(null);
   const [savingStatusId, setSavingStatusId] = useState(null);
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [bookingToCancel, setBookingToCancel] = useState(null);
 
   // Staff form state per booking
   const [staffForms, setStaffForms] = useState({});
@@ -113,17 +117,24 @@ export default function AdminBookings() {
     }
   }
 
-  async function handleCancel(id) {
+  function handleCancelClick(booking) {
+    setBookingToCancel(booking);
+    setShowCancelDialog(true);
+  }
+
+  async function handleConfirmCancel() {
+    if (!bookingToCancel) return;
     try {
-      setCancellingId(id);
+      setCancellingId(bookingToCancel.id);
       toast.info("Cancelling booking...");
-      await api(`/bookings/${id}/cancel`, { method: "PATCH" });
+      await api(`/bookings/${bookingToCancel.id}/cancel`, { method: "PATCH" });
       toast.success("Booking cancelled.");
       await loadBookings();
     } catch (err) {
       toast.error(err?.message || "Failed to cancel booking");
     } finally {
       setCancellingId(null);
+      setBookingToCancel(null);
     }
   }
 
@@ -286,12 +297,12 @@ export default function AdminBookings() {
                       <CheckCircle className="h-4 w-4" />
                       {confirmingId === booking.id ? "Confirming..." : "Confirm + Notify"}
                     </Button>
-                    <Button onClick={() => handleCancel(booking.id)}
+                    <Button onClick={() => handleCancelClick(booking)}
                       disabled={cancellingId === booking.id}
                       className="bg-red-500/20 border border-red-500/30 text-red-300 hover:bg-red-500/30 flex items-center gap-2 disabled:opacity-60">
                       <XCircle className="h-4 w-4" />
-                      {cancellingId === booking.id ? "Cancelling..." : "Reject"}
-                    </Button>
+                      {cancellingId === booking.id ? "Cancelling..." : "Cancel Booking"}
+                    </Button>                  
                   </div>
                 )}
 
@@ -412,6 +423,17 @@ export default function AdminBookings() {
           ))
         )}
       </div>
+
+      <ConfirmDialog
+        open={showCancelDialog}
+        onOpenChange={setShowCancelDialog}
+        title="Cancel Booking"
+        description="Are you sure you want to cancel the booking ? This cannot be undone."
+        onConfirm={handleConfirmCancel}
+        confirmText="Yes, Cancel"
+        cancelText="No, Keep it"
+        variant="danger"
+      />    
     </div>
   );
 }
