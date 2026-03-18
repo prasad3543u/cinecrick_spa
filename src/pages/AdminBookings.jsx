@@ -178,12 +178,12 @@ export default function AdminBookings() {
       <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <Button
-            onClick={() => navigate(-1)}
+            onClick={() => navigate("/")}
             variant="ghost"
             className="text-white/70 hover:text-white hover:bg-white/10 flex items-center gap-1 px-2"
           >
             <ArrowLeft className="h-5 w-5" />
-            <span className="hidden sm:inline">Back</span>
+            <span className="hidden sm:inline">Home</span>
           </Button>
           <h1 className="text-3xl sm:text-4xl font-black text-pink-400">Admin Bookings</h1>
         </div>
