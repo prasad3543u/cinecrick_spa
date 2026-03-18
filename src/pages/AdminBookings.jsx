@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import {
   CheckCircle, XCircle, MapPin, Calendar,
   Clock, CreditCard, User, MessageCircle,
-  Phone, Save, Shield
+  Phone, Save, Shield, ArrowLeft
 } from "lucide-react";
 
 function openWhatsAppConfirmation(booking) {
@@ -176,7 +176,17 @@ export default function AdminBookings() {
   return (
     <div className="min-h-screen bg-[#070812] text-white px-4 sm:px-6 py-8 sm:py-10">
       <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-3xl sm:text-4xl font-black text-pink-400">Admin Bookings</h1>
+        <div className="flex items-center gap-3">
+          <Button
+            onClick={() => navigate(-1)}
+            variant="ghost"
+            className="text-white/70 hover:text-white hover:bg-white/10 flex items-center gap-1 px-2"
+          >
+            <ArrowLeft className="h-5 w-5" />
+            <span className="hidden sm:inline">Back</span>
+          </Button>
+          <h1 className="text-3xl sm:text-4xl font-black text-pink-400">Admin Bookings</h1>
+        </div>
         <div className="flex gap-3">
           <Button onClick={() => navigate("/admin/today")}
             className="bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/30">
