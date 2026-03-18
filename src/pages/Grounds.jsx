@@ -7,6 +7,25 @@ import { Input } from "@/components/ui/input";
 import { GroundCardSkeleton } from "../components/Skeleton";
 import { Search, MapPin, SlidersHorizontal, X, ArrowUpDown } from "lucide-react";
 
+
+const FALLBACK_IMAGES = [
+  "https://images.unsplash.com/photo-1531415074968-036ba1b575da?w=600&auto=format",
+  "https://images.unsplash.com/photo-1589807789988-2e8b5e6f3f1a?w=600&auto=format",
+  "https://images.unsplash.com/photo-1624880357913-a8539238245b?w=600&auto=format",
+  "https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?w=600&auto=format",
+  "https://images.unsplash.com/photo-1624526267942-ab0ff8a3e972?w=600&auto=format",
+  "https://images.unsplash.com/photo-1591101762823-1a2a4b0daa21?w=600&auto=format",
+];
+
+const getFallbackImage = (groundId) => {
+  const index = (groundId || 0) % FALLBACK_IMAGES.length;
+  return FALLBACK_IMAGES[index];
+};
+
+
+
+
+
 export default function Grounds() {
   const navigate = useNavigate();
   const [grounds, setGrounds] = useState([]);
@@ -264,14 +283,26 @@ export default function Grounds() {
               className="border-white/10 bg-zinc-950/55 shadow-[0_20px_60px_rgba(0,0,0,.55)] overflow-hidden group hover:border-pink-500/30 transition-all duration-300"
             >
               <div className="relative overflow-hidden">
+                
                 <img
-                  src={ground.image_url}
-                  alt={ground.name}
-                  className="h-52 w-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  onError={(e) => {
-                    e.target.src = "https://images.unsplash.com/photo-1531415074968-036ba1b575da?w=600";
-                  }}
-                />
+  src={ground.image_url || getFallbackImage(ground.id)}
+  alt={ground.name}
+  className="h-52 w-full object-cover group-hover:scale-105 transition-transform duration-500"
+  onError={(e) => {
+    // If image fails to load, try another fallback
+    const currentSrc = e.target.src;
+    const fallbackIndex = (ground.id + 1) % FALLBACK_IMAGES.length;
+    const newFallback = FALLBACK_IMAGES[fallbackIndex];
+    
+    // Prevent infinite loop
+    if (!currentSrc.includes(newFallback)) {
+      e.target.src = newFallback;
+    } else {
+      // Ultimate fallback
+      e.target.src = "https://images.unsplash.com/photo-1531415074968-036ba1b575da?w=600";
+    }
+  }}
+/>
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                 <span className="absolute bottom-3 left-3 text-xs font-semibold bg-black/60 backdrop-blur px-2 py-1 rounded-full text-white/80">
                   {ground.sport_type}

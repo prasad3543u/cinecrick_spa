@@ -1,4 +1,6 @@
 const API_URL = import.meta.env.VITE_API_URL;
+let isRefreshing = false;
+let refreshQueue = [];
 
 // -----------------------------
 // Token helpers
@@ -18,7 +20,31 @@ export function clearToken() {
 }
 
 // -----------------------------
-// API request helper
+// Token refresh function
+// -----------------------------
+async function refreshAccessToken() {
+  try {
+    const response = await fetch(`${API_URL}/auth/refresh_token`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${getToken()}`,
+        "Content-Type": "application/json"
+      }
+    });
+    
+    if (!response.ok) throw new Error("Refresh failed");
+    
+    const data = await response.json();
+    setToken(data.token);
+    return data.token;
+  } catch (error) {
+    clearToken();
+    throw error;
+  }
+}
+
+// -----------------------------
+// API request helper with auto-refresh
 // -----------------------------
 export async function api(
   path,
@@ -32,35 +58,101 @@ export async function api(
     "Content-Type": "application/json",
   };
 
-  // Auto-attach token if present
   const token = getToken();
   if (token) {
     headers.Authorization = `Bearer ${token}`;
   }
 
-  const res = await fetch(`${API_URL}${path}`, {
-    method,
-    headers,
-    body: body ? JSON.stringify(body) : null,
-  });
+  try {
+    const res = await fetch(`${API_URL}${path}`, {
+      method,
+      headers,
+      body: body ? JSON.stringify(body) : null,
+    });
 
-  const data = await res.json().catch(() => ({}));
+    const data = await res.json().catch(() => ({}));
 
-  // Auto logout if token expired
-  if (res.status === 401) {
-    clearToken();
-    window.location.href = "/";
-    throw new Error("Session expired. Please login again.");
+    // Handle 401 with token refresh
+    if (res.status === 401) {
+      // Don't attempt refresh on login endpoint
+      if (path === '/auth/login' || path === '/auth/signup') {
+        clearToken();
+        window.location.href = "/";
+        throw new Error("Invalid credentials");
+      }
+
+      // Queue failed requests while refreshing
+      if (!isRefreshing) {
+        isRefreshing = true;
+        
+        try {
+          const newToken = await refreshAccessToken();
+          isRefreshing = false;
+          
+          // Retry queued requests
+          refreshQueue.forEach(cb => cb(newToken));
+          refreshQueue = [];
+          
+          // Retry this request
+          headers.Authorization = `Bearer ${newToken}`;
+          const retryRes = await fetch(`${API_URL}${path}`, {
+            method,
+            headers,
+            body: body ? JSON.stringify(body) : null,
+          });
+          
+          const retryData = await retryRes.json().catch(() => ({}));
+          
+          if (!retryRes.ok) {
+            throw new Error(retryData?.error || "Request failed after token refresh");
+          }
+          
+          return retryData;
+        } catch (refreshError) {
+          isRefreshing = false;
+          refreshQueue = [];
+          clearToken();
+          window.location.href = "/";
+          throw new Error("Session expired. Please login again.");
+        }
+      } else {
+        // Wait for refresh to complete
+        return new Promise((resolve, reject) => {
+          refreshQueue.push(async (newToken) => {
+            try {
+              headers.Authorization = `Bearer ${newToken}`;
+              const retryRes = await fetch(`${API_URL}${path}`, {
+                method,
+                headers,
+                body: body ? JSON.stringify(body) : null,
+              });
+              
+              const retryData = await retryRes.json().catch(() => ({}));
+              
+              if (!retryRes.ok) {
+                throw new Error(retryData?.error || "Request failed");
+              }
+              
+              resolve(retryData);
+            } catch (error) {
+              reject(error);
+            }
+          });
+        });
+      }
+    }
+
+    if (!res.ok) {
+      const msg =
+        data?.error ||
+        (Array.isArray(data?.errors)
+          ? data.errors.join(", ")
+          : "Request failed");
+      throw new Error(msg);
+    }
+
+    return data;
+  } catch (error) {
+    throw error;
   }
-
-  if (!res.ok) {
-    const msg =
-      data?.error ||
-      (Array.isArray(data?.errors)
-        ? data.errors.join(", ")
-        : "Request failed");
-    throw new Error(msg);
-  }
-
-  return data;
 }
