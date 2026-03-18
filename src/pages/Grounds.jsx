@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { GroundCardSkeleton } from "../components/Skeleton";
 import { Search, MapPin, SlidersHorizontal, X, ArrowUpDown } from "lucide-react";
+import { EmptyGrounds } from "../components/EmptyState";
 
 
 const FALLBACK_IMAGES = [
@@ -267,14 +268,11 @@ export default function Grounds() {
         {loading ? (
           Array.from({ length: 6 }).map((_, i) => <GroundCardSkeleton key={i} />)
         ) : filtered.length === 0 ? (
-          <div className="col-span-full text-center py-20">
-            <p className="text-white/40 text-lg mb-3">No grounds match your filters.</p>
-            <button
-              onClick={clearFilters}
-              className="text-pink-400 hover:text-pink-300 underline text-sm transition"
-            >
-              Clear all filters
-            </button>
+          <div className="col-span-full">
+            <EmptyGrounds
+              clearFilters={clearFilters}
+              hasFilters={hasActiveFilters}
+            />        
           </div>
         ) : (
           filtered.map((ground) => (
