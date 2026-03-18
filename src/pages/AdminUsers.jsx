@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { Users, Search, ShieldCheck, User, BookOpen, Calendar, Phone } from "lucide-react";
+import { Users, Search, ShieldCheck, User, BookOpen, Calendar, Phone, ArrowLeft } from "lucide-react";
 
 export default function AdminUsers() {
   const navigate = useNavigate();
@@ -72,7 +72,17 @@ export default function AdminUsers() {
 
       {/* Header */}
       <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-3xl sm:text-4xl font-black text-pink-400">Admin Users</h1>
+        <div className="flex items-center gap-3">
+          <Button
+            onClick={() => navigate("/")}
+            variant="ghost"
+            className="text-white/70 hover:text-white hover:bg-white/10 flex items-center gap-1 px-2"
+          >
+            <ArrowLeft className="h-5 w-5" />
+            <span className="hidden sm:inline">Home</span>
+          </Button>
+          <h1 className="text-3xl sm:text-4xl font-black text-pink-400">Admin Users</h1>
+        </div>
         <div className="flex gap-3">
           <Button onClick={() => navigate("/admin/dashboard")} className="bg-white/10 text-white hover:bg-white/15">
             Dashboard
