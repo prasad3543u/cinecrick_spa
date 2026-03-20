@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AdminBookingCardSkeleton } from "../components/Skeleton";
 import { toast } from "sonner";
+import { Bell } from "lucide-react";  
 import {
   CheckCircle, XCircle, MapPin, Calendar,
   Clock, CreditCard, User, MessageCircle,
@@ -196,6 +197,36 @@ export default function AdminBookings() {
       setSavingStatusId(null);
     }
   }
+    async function sendManualAdminReminder(booking) {
+  const adminNumber = booking.ground?.admin_phone;
+  
+  if (!adminNumber) {
+    toast.error("Admin phone number not found");
+    return;
+  }
+  
+  const number = String(adminNumber).replace(/\D/g, "");
+  
+  const message = `*MATCH REMINDER*
+
+Ground: ${booking.ground?.name}
+Date: ${booking.booking_date}
+Time: ${booking.slot?.start_time} - ${booking.slot?.end_time}
+Team: ${booking.user?.name}
+
+*Preparation Checklist:*
+□ Umpire Arranged
+□ Water Arranged
+□ Balls Ready
+□ Ground Ready
+
+Please update status in admin panel.
+— CrickOps`;
+
+  window.open(`https://wa.me/${number}?text=${encodeURIComponent(message)}`, "_blank");
+  toast.success("Reminder sent to admin!");
+}
+
 
   function updateStaffForm(bookingId, field, value) {
     setStaffForms((prev) => ({
@@ -424,6 +455,13 @@ export default function AdminBookings() {
                       >
                         <Phone className="h-3.5 w-3.5" /> Send Reminder
                       </Button>
+
+                       <Button
+  onClick={() => sendManualAdminReminder(booking)}
+  className="bg-orange-500/10 border border-orange-500/20 text-orange-300 hover:bg-orange-500/20 text-xs flex items-center gap-2"
+>
+  <Bell className="h-3.5 w-3.5" /> Remind Admin
+</Button>
                       <Button
                         onClick={() => sendAdminReminder(booking)}
                         className="bg-orange-500/10 border border-orange-500/20 text-orange-300 hover:bg-orange-500/20 text-xs flex items-center gap-2"
