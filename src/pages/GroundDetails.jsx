@@ -15,7 +15,7 @@ export default function GroundDetails() {
   const [user, setUser] = useState(null);
   const [slots, setSlots] = useState([]);
   const [selectedDate, setSelectedDate] = useState("");
-  const [selectedSlot, setSelectedSlot] = useState(null); // FIX: Changed from selectedSession
+  const [selectedSlot, setSelectedSlot] = useState(null);
   const [matchType, setMatchType] = useState("with_opponents");
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [bookingLoading, setBookingLoading] = useState(false);
@@ -23,7 +23,6 @@ export default function GroundDetails() {
   const [error, setError] = useState("");
   const [slotError, setSlotError] = useState("");
 
-  // Initialize retry hook
   const { withRetry, retrying, retryCount } = useRetry(3, 1000);
 
   useEffect(() => {
@@ -88,6 +87,41 @@ export default function GroundDetails() {
       : selectedSlot.price;
   }
 
+  // NEW: Function to open WhatsApp to admin with booking request
+  function openWhatsAppToAdmin() {
+    if (!ground) return;
+    
+    const adminNumber = ground.admin_phone;
+    
+    if (!adminNumber) {
+      console.log("No admin phone number found");
+      toast.warning("Admin contact not available. Your booking is saved but admin will need to contact you.");
+      return;
+    }
+    
+    const number = String(adminNumber).replace(/\D/g, "");
+    
+    const message = `🏏 *NEW BOOKING REQUEST*
+
+*User Details:*
+Name: ${user?.name || "Guest"}
+Phone: ${user?.phone || "Not provided"}
+Email: ${user?.email || "Not provided"}
+
+*Booking Details:*
+Ground: ${ground.name}
+Date: ${selectedSlot?.slot_date}
+Time: ${selectedSlot?.start_time} - ${selectedSlot?.end_time}
+Match Type: ${matchType === "with_opponents" ? "With Opponents" : "Full Ground"}
+Price: ₹${calculateTotalPrice()}
+
+*Message:* I have created a booking request. Please confirm availability.
+
+— CrickOps`;
+    
+    window.open(`https://wa.me/${number}?text=${encodeURIComponent(message)}`, "_blank");
+  }
+
   async function handleBooking() {
     if (!selectedSlot) {
       toast.error("Please select a time slot");
@@ -115,7 +149,6 @@ export default function GroundDetails() {
 
       setBookingProgress("Booking your slot...");
       
-      // WRAP API CALL WITH RETRY LOGIC
       const result = await withRetry(
         async () => {
           return await api("/bookings", {
@@ -131,33 +164,32 @@ export default function GroundDetails() {
         }
       );
 
-      // Show retry count if it happened
       if (retryCount > 0) {
         toast.info(`Booking completed after ${retryCount} retry attempt(s)`, {
           duration: 3000,
         });
       }
 
-      toast.loading("Booking created! Waiting for confirmation...", { id: toastId });
-      setBookingProgress("Processing confirmation...");
+      // 🔥 OPEN WHATSAPP TO ADMIN
+      setBookingProgress("Opening WhatsApp...");
+      openWhatsAppToAdmin();
+      
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
-      // Success!
       toast.success(
         `Booking created! ${matchType === "without_opponents" ? "You've booked both teams." : "Waiting for another team to join."}`,
         { id: toastId, duration: 5000 }
       );
       
-      // Navigate to my bookings
       setTimeout(() => {
         navigate("/my-bookings");
-      }, 1500);
+      }, 2000);
       
     } catch (error) {
       console.error("Booking error:", error);
       
       let errorMessage = error.message || "Failed to create booking. Please try again.";
       
-      // Provide specific guidance based on error
       if (errorMessage.includes("already booked")) {
         errorMessage = "This slot is already booked. Please select another time.";
       } else if (errorMessage.includes("fully booked")) {
