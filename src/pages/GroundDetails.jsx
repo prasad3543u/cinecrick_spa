@@ -3,7 +3,9 @@ import { useParams, useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { MapPin, Clock, Shield, User, Phone } from "lucide-react";
+import { MapPin, Clock, Shield, User, Phone, Loader2 } from "lucide-react";
+import { toast } from "sonner";
+import { useRetry } from "../hooks/useRetry";
 
 export default function GroundDetails() {
   const { id } = useParams();
@@ -13,12 +15,16 @@ export default function GroundDetails() {
   const [user, setUser] = useState(null);
   const [slots, setSlots] = useState([]);
   const [selectedDate, setSelectedDate] = useState("");
-  const [selectedSession, setSelectedSession] = useState(null);
+  const [selectedSlot, setSelectedSlot] = useState(null); // FIX: Changed from selectedSession
   const [matchType, setMatchType] = useState("with_opponents");
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [bookingLoading, setBookingLoading] = useState(false);
+  const [bookingProgress, setBookingProgress] = useState(null);
   const [error, setError] = useState("");
   const [slotError, setSlotError] = useState("");
+
+  // Initialize retry hook
+  const { withRetry, retrying, retryCount } = useRetry(3, 1000);
 
   useEffect(() => {
     loadGround();
@@ -50,7 +56,7 @@ export default function GroundDetails() {
   async function loadSlotsByDate(date) {
     try {
       setLoadingSlots(true);
-      setSelectedSession(null);
+      setSelectedSlot(null);
       setSlotError("");
       const data = await api(`/slots?ground_id=${id}&slot_date=${date}`);
       setSlots(Array.isArray(data) ? data : []);
@@ -62,65 +68,109 @@ export default function GroundDetails() {
     }
   }
 
-  function handleSelectSession(session) {
-    if (session.status?.toLowerCase() === "booked") {
+  function handleSelectSlot(slot) {
+    if (slot.status?.toLowerCase() === "booked") {
       setSlotError("This slot is already booked. Please choose another.");
       return;
     }
+    if (slot.status?.toLowerCase() === "pending") {
+      setSlotError("This slot is pending confirmation. Please choose another.");
+      return;
+    }
     setSlotError("");
-    setSelectedSession(session);
+    setSelectedSlot(slot);
   }
 
-  function formatMatchType() {
-    return matchType === "with_opponents"
-      ? "Ground Needed With Opponents"
-      : "Ground Needed Without Opponents";
+  function calculateTotalPrice() {
+    if (!selectedSlot) return 0;
+    return matchType === "without_opponents" 
+      ? selectedSlot.price * 2 
+      : selectedSlot.price;
   }
 
-  async function handleWhatsAppBooking() {
-    setError("");
-    if (!selectedDate) { setError("Please select a date first."); return; }
-    if (!selectedSession) { setError("Please select a session first."); return; }
-    if (!ground?.admin_phone) { setError("Ground owner WhatsApp number is not set."); return; }
+  async function handleBooking() {
+    if (!selectedSlot) {
+      toast.error("Please select a time slot");
+      return;
+    }
+
+    if (!matchType) {
+      toast.error("Please select match type");
+      return;
+    }
+
+    setBookingLoading(true);
+    setBookingProgress("Creating your booking...");
+    
+    const toastId = toast.loading("Creating your booking...", {
+      duration: Infinity,
+    });
 
     try {
-      setBookingLoading(true);
-      await api("/bookings", {
-        method: "POST",
-        body: {
-          ground_id: ground.id,
-          slot_id: selectedSession.id,
-          booking_date: selectedSession.slot_date,
-          total_price: selectedSession.price,
-          match_type: matchType,
+      const bookingData = {
+        slot_id: selectedSlot.id,
+        ground_id: ground.id,
+        match_type: matchType,
+      };
+
+      setBookingProgress("Booking your slot...");
+      
+      // WRAP API CALL WITH RETRY LOGIC
+      const result = await withRetry(
+        async () => {
+          return await api("/bookings", {
+            method: "POST",
+            body: bookingData,
+            timeout: 30000,
+          });
         },
+        {
+          retryMessage: "Booking taking longer than expected. Retrying...",
+          successMessage: "Booking created successfully!",
+          showToasts: true
+        }
+      );
+
+      // Show retry count if it happened
+      if (retryCount > 0) {
+        toast.info(`Booking completed after ${retryCount} retry attempt(s)`, {
+          duration: 3000,
+        });
+      }
+
+      toast.loading("Booking created! Waiting for confirmation...", { id: toastId });
+      setBookingProgress("Processing confirmation...");
+
+      // Success!
+      toast.success(
+        `Booking created! ${matchType === "without_opponents" ? "You've booked both teams." : "Waiting for another team to join."}`,
+        { id: toastId, duration: 5000 }
+      );
+      
+      // Navigate to my bookings
+      setTimeout(() => {
+        navigate("/my-bookings");
+      }, 1500);
+      
+    } catch (error) {
+      console.error("Booking error:", error);
+      
+      let errorMessage = error.message || "Failed to create booking. Please try again.";
+      
+      // Provide specific guidance based on error
+      if (errorMessage.includes("already booked")) {
+        errorMessage = "This slot is already booked. Please select another time.";
+      } else if (errorMessage.includes("fully booked")) {
+        errorMessage = "This slot is fully booked. Please select another time.";
+      } else if (errorMessage.includes("busy")) {
+        errorMessage = "The server is busy. Please try again in a moment.";
+      }
+      
+      toast.error(errorMessage, {
+        id: toastId,
+        duration: 5000,
       });
-
-      const adminNumber = String(ground.admin_phone).replace(/\D/g, "");
-      const message = `Hello ${ground.admin_name || "Admin"},
-
-🏏 Ground Booking Request
-
-Ground: ${ground.name}
-Location: ${ground.location}
-Date: ${selectedDate}
-Time: ${selectedSession.start_time} - ${selectedSession.end_time}
-Price: ₹${matchType === "without_opponents" ? selectedSession.price * 2 : selectedSession.price}
-Match Type: ${formatMatchType()}
-
-Requested by:
-Name: ${user?.name || "User"}
-Email: ${user?.email || ""}
-
-⚠️ Please share your payment details for advance payment to confirm this booking.
-
-Note: Cancellation after confirmation — No refund.`;
-
-      const url = `https://wa.me/${adminNumber}?text=${encodeURIComponent(message)}`;
-      await loadSlotsByDate(selectedDate);
-      window.open(url, "_blank");
-    } catch (err) {
-      setError(err.message || "Failed to create booking request.");
+      setBookingProgress(null);
     } finally {
       setBookingLoading(false);
     }
@@ -195,6 +245,7 @@ Note: Cancellation after confirmation — No refund.`;
           value={selectedDate}
           onChange={(e) => setSelectedDate(e.target.value)}
           className="w-full sm:w-auto rounded-lg border border-white/10 bg-zinc-900 px-4 py-3 text-white"
+          min={new Date().toISOString().split('T')[0]}
         />
       </div>
 
@@ -210,41 +261,49 @@ Note: Cancellation after confirmation — No refund.`;
       {!selectedDate ? (
         <p className="text-white/70 mb-8 text-sm">Please select a date to see slots.</p>
       ) : loadingSlots ? (
-        <p className="text-white/70 mb-8 text-sm">Loading slots...</p>
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="h-8 w-8 animate-spin text-pink-500" />
+          <span className="ml-2 text-white/70">Loading slots...</span>
+        </div>
       ) : slots.length === 0 ? (
         <p className="text-white/70 mb-8 text-sm">No slots available for this date.</p>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-          {slots.map((session) => {
+          {slots.map((slot) => {
             let statusText = "Available";
-            if (session.status?.toLowerCase() === "booked") {
+            let isDisabled = false;
+            
+            if (slot.status?.toLowerCase() === "booked") {
               statusText = "Booked";
-            } else if (Number(session.teams_booked_count || 0) === 1) {
+              isDisabled = true;
+            } else if (slot.status?.toLowerCase() === "pending") {
+              statusText = "Pending Confirmation";
+              isDisabled = true;
+            } else if (Number(slot.teams_booked_count || 0) === 1) {
               statusText = "Available (1 team joined)";
             }
 
-            const isSelected = selectedSession?.id === session.id;
-            const isBooked = statusText === "Booked";
+            const isSelected = selectedSlot?.id === slot.id;
 
             return (
               <Card
-                key={session.id}
+                key={slot.id}
                 className={`cursor-pointer border bg-zinc-900 transition ${
-                  isSelected ? "border-pink-500" : "border-white/10"
-                } ${isBooked ? "opacity-80 cursor-not-allowed" : "hover:border-pink-400"}`}
-                onClick={() => handleSelectSession(session)}
+                  isSelected ? "border-pink-500 ring-2 ring-pink-500/50" : "border-white/10"
+                } ${isDisabled ? "opacity-60 cursor-not-allowed" : "hover:border-pink-400"}`}
+                onClick={() => !isDisabled && handleSelectSlot(slot)}
               >
                 <CardContent className="p-4 sm:p-6">
                   <h3 className="text-lg sm:text-xl font-bold mb-2">
-                    {session.start_time} - {session.end_time}
+                    {slot.start_time} - {slot.end_time}
                   </h3>
-                  <p className="text-white/70 text-sm">Date: {session.slot_date}</p>
-                  <p className="text-pink-400 font-semibold mt-1">₹{session.price} per team</p>
+                  <p className="text-white/70 text-sm">Date: {slot.slot_date}</p>
+                  <p className="text-pink-400 font-semibold mt-1">₹{slot.price} per team</p>
                   <p className="text-white/70 mt-1 text-sm">
-                    Teams: {session.teams_booked_count || 0} / {session.max_teams || 2}
+                    Teams: {slot.teams_booked_count || 0} / {slot.max_teams || 2}
                   </p>
                   <p className={`mt-1 font-medium text-sm ${
-                    statusText === "Booked" ? "text-red-400" : "text-green-400"
+                    isDisabled ? "text-red-400" : "text-green-400"
                   }`}>
                     {statusText}
                   </p>
@@ -282,17 +341,15 @@ Note: Cancellation after confirmation — No refund.`;
         </label>
       </div>
 
-      {/* Selected Session Summary */}
-      {selectedSession && (
+      {/* Selected Slot Summary */}
+      {selectedSlot && (
         <Card className="bg-zinc-900 border border-white/10 mb-6">
           <CardContent className="p-4 sm:p-5">
             <h3 className="text-lg font-bold mb-2 text-pink-400">Selected Session</h3>
-            <p className="text-white/80 text-sm">{selectedSession.start_time} - {selectedSession.end_time}</p>
-            <p className="text-white/70 text-sm">Date: {selectedSession.slot_date}</p>
+            <p className="text-white/80 text-sm">{selectedSlot.start_time} - {selectedSlot.end_time}</p>
+            <p className="text-white/70 text-sm">Date: {selectedSlot.slot_date}</p>
             <p className="text-white/70 text-sm">
-              Price: ₹{matchType === "without_opponents"
-                ? selectedSession.price * 2
-                : selectedSession.price}
+              Price: ₹{calculateTotalPrice()}
               {matchType === "without_opponents" && (
                 <span className="ml-2 text-xs text-yellow-400">(Full ground — 2x price)</span>
               )}
@@ -306,14 +363,49 @@ Note: Cancellation after confirmation — No refund.`;
         </Card>
       )}
 
+      {/* Retry Indicator */}
+      {retrying && (
+        <div className="mb-4 p-3 rounded-xl bg-yellow-500/10 border border-yellow-500/30 animate-pulse">
+          <div className="flex items-center justify-center gap-2">
+            <Loader2 className="h-4 w-4 animate-spin text-yellow-400" />
+            <p className="text-yellow-300 text-sm">
+              Retrying... Attempt {retryCount} of 3
+            </p>
+          </div>
+          <p className="text-yellow-300/70 text-xs text-center mt-1">
+            The request is taking longer than expected. Please wait...
+          </p>
+        </div>
+      )}
+
       {/* Book Button */}
       <Button
-        onClick={handleWhatsAppBooking}
-        disabled={bookingLoading}
-        className="w-full sm:w-auto bg-green-500 hover:bg-green-600 text-black font-bold text-base sm:text-lg px-6 sm:px-8 py-3 sm:py-4"
+        onClick={handleBooking}
+        disabled={!selectedSlot || !matchType || bookingLoading}
+        className="w-full bg-gradient-to-r from-green-500 to-emerald-600 font-bold text-lg py-6 disabled:opacity-50"
       >
-        {bookingLoading ? "Creating request..." : "Book via WhatsApp"}
+        {bookingLoading ? (
+          <div className="flex items-center justify-center gap-2">
+            <Loader2 className="h-5 w-5 animate-spin" />
+            {retryCount > 0 ? (
+              <span>Retrying... (Attempt {retryCount}/3)</span>
+            ) : (
+              <span>{bookingProgress || "Processing..."}</span>
+            )}
+          </div>
+        ) : (
+          `Book Now - ₹${calculateTotalPrice()}`
+        )}
       </Button>
+
+      {/* Timeout Warning */}
+      {bookingLoading && bookingProgress === "Creating your booking..." && (
+        <div className="mt-4 p-3 rounded-xl bg-yellow-500/10 border border-yellow-500/30">
+          <p className="text-yellow-300 text-sm text-center">
+            This may take a few seconds. Please don't close the page.
+          </p>
+        </div>
+      )}
     </div>
   );
 }
