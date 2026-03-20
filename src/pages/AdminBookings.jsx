@@ -6,12 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AdminBookingCardSkeleton } from "../components/Skeleton";
 import { toast } from "sonner";
-import { ConfirmDialog } from "@/components/ConfirmDialog";     
-
 import {
   CheckCircle, XCircle, MapPin, Calendar,
   Clock, CreditCard, User, MessageCircle,
-  Phone, Save, Shield, ArrowLeft
+  Phone, Save, Shield, ArrowLeft, Bell, Droplets, Circle
 } from "lucide-react";
 
 function openWhatsAppConfirmation(booking) {
@@ -62,6 +60,40 @@ Please be on time. Good luck!
   window.open(`https://wa.me/${number}?text=${encodeURIComponent(message)}`, "_blank");
 }
 
+function sendAdminReminder(booking) {
+  const adminNumber = booking.ground?.admin_phone;
+  
+  if (!adminNumber) {
+    toast.error("Admin phone number not found for this ground");
+    return;
+  }
+  
+  const number = String(adminNumber).replace(/\D/g, "");
+  
+  const message = `*MATCH REMINDER*
+
+Ground: ${booking.ground?.name}
+Date: ${booking.booking_date}
+Time: ${booking.slot?.start_time} - ${booking.slot?.end_time}
+
+Team: ${booking.user?.name}
+Contact: ${booking.user?.phone}
+
+Current Status:
+Umpire Arranged: ${booking.umpire_arranged ? "Yes" : "No"}
+Water Arranged: ${booking.water_arranged ? "Yes" : "No"}
+Balls Ready: ${booking.balls_ready ? "Yes" : "No"}
+Ground Ready: ${booking.ground_ready ? "Yes" : "No"}
+
+Please check and update status in the admin panel.
+
+— CrickOps`;
+  
+  window.open(`https://wa.me/${number}?text=${encodeURIComponent(message)}`, "_blank");
+  
+  toast.success("Reminder sent to admin!");
+}
+
 export default function AdminBookings() {
   const navigate = useNavigate();
   const [bookings, setBookings] = useState([]);
@@ -70,10 +102,6 @@ export default function AdminBookings() {
   const [cancellingId, setCancellingId] = useState(null);
   const [savingStaffId, setSavingStaffId] = useState(null);
   const [savingStatusId, setSavingStatusId] = useState(null);
-  const [showCancelDialog, setShowCancelDialog] = useState(false);
-  const [bookingToCancel, setBookingToCancel] = useState(null);
-
-  // Staff form state per booking
   const [staffForms, setStaffForms] = useState({});
 
   useEffect(() => { loadBookings(); }, []);
@@ -84,7 +112,6 @@ export default function AdminBookings() {
       const data = await api("/admin/bookings");
       const list = Array.isArray(data) ? data : [];
       setBookings(list);
-      // Initialize staff forms from existing data
       const forms = {};
       list.forEach((b) => {
         forms[b.id] = {
@@ -117,24 +144,17 @@ export default function AdminBookings() {
     }
   }
 
-  function handleCancelClick(booking) {
-    setBookingToCancel(booking);
-    setShowCancelDialog(true);
-  }
-
-  async function handleConfirmCancel() {
-    if (!bookingToCancel) return;
+  async function handleCancel(id) {
     try {
-      setCancellingId(bookingToCancel.id);
+      setCancellingId(id);
       toast.info("Cancelling booking...");
-      await api(`/bookings/${bookingToCancel.id}/cancel`, { method: "PATCH" });
+      await api(`/bookings/${id}/cancel`, { method: "PATCH" });
       toast.success("Booking cancelled.");
       await loadBookings();
     } catch (err) {
       toast.error(err?.message || "Failed to cancel booking");
     } finally {
       setCancellingId(null);
-      setBookingToCancel(null);
     }
   }
 
@@ -158,10 +178,10 @@ export default function AdminBookings() {
     try {
       setSavingStatusId(booking.id);
       const updated = {
-        umpire_reached: booking.umpire_reached,
-        water_arranged: booking.water_arranged,
-        balls_ready:    booking.balls_ready,
-        ground_ready:   booking.ground_ready,
+        umpire_arranged: booking.umpire_arranged,
+        water_arranged:  booking.water_arranged,
+        balls_ready:     booking.balls_ready,
+        ground_ready:    booking.ground_ready,
         [field]: !booking[field],
       };
       await api(`/bookings/${booking.id}/update_status`, {
@@ -227,7 +247,6 @@ export default function AdminBookings() {
               }`} />
 
               <CardContent className="p-4 sm:p-6">
-                {/* Header */}
                 <div className="flex flex-wrap items-start justify-between gap-2 mb-4">
                   <div className="flex-1 min-w-0">
                     <h2 className="text-lg sm:text-xl font-bold text-pink-400 leading-tight">
@@ -245,7 +264,6 @@ export default function AdminBookings() {
                   }`}>{booking.status}</span>
                 </div>
 
-                {/* Details grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
                   <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2">
                     <User className="h-4 w-4 text-pink-400 shrink-0" />
@@ -288,7 +306,6 @@ export default function AdminBookings() {
                   <p>Payment: <span className="text-white/70">{booking.payment_status || "--"}</span></p>
                 </div>
 
-                {/* Pending actions */}
                 {booking.status === "pending" && (
                   <div className="flex flex-wrap gap-3">
                     <Button onClick={() => handleConfirm(booking)}
@@ -297,20 +314,18 @@ export default function AdminBookings() {
                       <CheckCircle className="h-4 w-4" />
                       {confirmingId === booking.id ? "Confirming..." : "Confirm + Notify"}
                     </Button>
-                    <Button onClick={() => handleCancelClick(booking)}
+                    <Button onClick={() => handleCancel(booking.id)}
                       disabled={cancellingId === booking.id}
                       className="bg-red-500/20 border border-red-500/30 text-red-300 hover:bg-red-500/30 flex items-center gap-2 disabled:opacity-60">
                       <XCircle className="h-4 w-4" />
-                      {cancellingId === booking.id ? "Cancelling..." : "Cancel Booking"}
-                    </Button>                  
+                      {cancellingId === booking.id ? "Cancelling..." : "Reject"}
+                    </Button>
                   </div>
                 )}
 
-                {/* Confirmed booking — staff + status */}
                 {booking.status === "confirmed" && (
                   <div className="space-y-4 mt-2">
 
-                    {/* Staff Assignment */}
                     <div className="rounded-xl border border-violet-500/20 bg-violet-500/5 p-4 space-y-3">
                       <p className="text-xs font-bold text-violet-300 uppercase tracking-wide flex items-center gap-2">
                         <Shield className="h-3.5 w-3.5" /> Assign Staff
@@ -365,18 +380,17 @@ export default function AdminBookings() {
                       </Button>
                     </div>
 
-                    {/* Match Day Status */}
                     <div className="rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-4 space-y-3">
                       <p className="text-xs font-bold text-cyan-300 uppercase tracking-wide">
                         Match Day Status
                       </p>
                       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                         {[
-                          { field: "umpire_reached",  label: "Umpire Reached" },
-                          { field: "water_arranged",  label: "Water Arranged" },
-                          { field: "balls_ready",     label: "Balls Ready" },
-                          { field: "ground_ready",    label: "Ground Ready" },
-                        ].map(({ field, label }) => (
+                          { field: "umpire_arranged", label: "Umpire Arranged", icon: <User className="h-4 w-4" /> },
+                          { field: "water_arranged",  label: "Water Arranged",  icon: <Droplets className="h-4 w-4" /> },
+                          { field: "balls_ready",     label: "Balls Ready",     icon: <Circle className="h-4 w-4" /> },
+                          { field: "ground_ready",    label: "Ground Ready",    icon: <CheckCircle className="h-4 w-4" /> },
+                        ].map(({ field, label, icon }) => (
                           <button
                             key={field}
                             type="button"
@@ -388,14 +402,15 @@ export default function AdminBookings() {
                                 : "bg-white/5 border-white/10 text-white/40 hover:bg-white/10 hover:text-white"
                             }`}
                           >
-                            <CheckCircle className={`h-5 w-5 ${booking[field] ? "text-green-400" : "text-white/20"}`} />
+                            <span className={booking[field] ? "text-green-400" : "text-white/20"}>
+                              {icon}
+                            </span>
                             {label}
                           </button>
                         ))}
                       </div>
                     </div>
 
-                    {/* Action buttons */}
                     <div className="flex flex-wrap items-center gap-3">
                       <Button
                         onClick={() => openWhatsAppConfirmation(booking)}
@@ -408,6 +423,12 @@ export default function AdminBookings() {
                         className="bg-yellow-500/10 border border-yellow-500/20 text-yellow-300 hover:bg-yellow-500/20 text-xs flex items-center gap-2"
                       >
                         <Phone className="h-3.5 w-3.5" /> Send Reminder
+                      </Button>
+                      <Button
+                        onClick={() => sendAdminReminder(booking)}
+                        className="bg-orange-500/10 border border-orange-500/20 text-orange-300 hover:bg-orange-500/20 text-xs flex items-center gap-2"
+                      >
+                        <Bell className="h-3.5 w-3.5" /> Remind Admin
                       </Button>
                     </div>
                   </div>
@@ -423,17 +444,6 @@ export default function AdminBookings() {
           ))
         )}
       </div>
-
-      <ConfirmDialog
-        open={showCancelDialog}
-        onOpenChange={setShowCancelDialog}
-        title="Cancel Booking"
-        description="Are you sure you want to cancel the booking ? This cannot be undone."
-        onConfirm={handleConfirmCancel}
-        confirmText="Yes, Cancel"
-        cancelText="No, Keep it"
-        variant="danger"
-      />    
     </div>
   );
 }

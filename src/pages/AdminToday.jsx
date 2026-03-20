@@ -4,10 +4,9 @@ import { api } from "../lib/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { EmptyAdminToday } from "@/components/EmptyState";
 import {
   CheckCircle, Clock, MapPin, User,
-  MessageCircle, Phone, Droplets, Circle, Send, ArrowLeft
+  MessageCircle, Phone, Droplets, Circle, Send, ArrowLeft, Loader2
 } from "lucide-react";
 
 function sendWhatsAppReminder(booking) {
@@ -52,10 +51,10 @@ export default function AdminToday() {
     try {
       setSavingStatusId(booking.id);
       const updated = {
-        umpire_reached: booking.umpire_reached,
-        water_arranged: booking.water_arranged,
-        balls_ready:    booking.balls_ready,
-        ground_ready:   booking.ground_ready,
+        umpire_arranged: booking.umpire_arranged,
+        water_arranged:  booking.water_arranged,
+        balls_ready:     booking.balls_ready,
+        ground_ready:    booking.ground_ready,
         [field]: !booking[field],
       };
       await api(`/bookings/${booking.id}/update_status`, {
@@ -80,7 +79,7 @@ export default function AdminToday() {
     for (const booking of withPhone) {
       setTimeout(() => {
         sendWhatsAppReminder(booking);
-      }, sent * 1500); // 1.5s gap between each so browser doesn't block
+      }, sent * 1500);
       sent++;
     }
     toast.success(`Sending reminders to ${sent} teams...`);
@@ -90,15 +89,21 @@ export default function AdminToday() {
     weekday: "long", day: "numeric", month: "long", year: "numeric"
   });
 
-  // Overall status summary
   const allReady = bookings.length > 0 && bookings.every(
-    (b) => b.umpire_reached && b.water_arranged && b.balls_ready && b.ground_ready
+    (b) => b.umpire_arranged && b.water_arranged && b.balls_ready && b.ground_ready
   );
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#070812] text-white flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-pink-500" />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#070812] text-white px-4 sm:px-6 py-8">
 
-      {/* Header */}
       <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <Button
@@ -137,7 +142,6 @@ export default function AdminToday() {
         </div>
       </div>
 
-      {/* Summary bar */}
       {!loading && bookings.length > 0 && (
         <div className={`mb-6 rounded-xl border px-4 py-3 flex items-center gap-3 ${
           allReady
@@ -153,19 +157,15 @@ export default function AdminToday() {
         </div>
       )}
 
-      {/* Matches */}
-      {loading ? (
-        <div className="grid gap-5">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="rounded-2xl border border-white/10 bg-white/5 p-5 animate-pulse h-48" />
-          ))}
+      {bookings.length === 0 ? (
+        <div className="rounded-2xl border border-white/10 bg-zinc-950/55 p-16 text-center">
+          <p className="text-white/40 text-lg">No confirmed matches today.</p>
+          <p className="text-white/30 text-sm mt-2">Check back on match days.</p>
         </div>
-      ) : bookings.length === 0 ? (
-          <EmptyAdminToday />
       ) : (
         <div className="grid gap-5">
           {bookings.map((booking) => {
-            const matchReady = booking.umpire_reached && booking.water_arranged &&
+            const matchReady = booking.umpire_arranged && booking.water_arranged &&
                                booking.balls_ready && booking.ground_ready;
             return (
               <Card key={booking.id} className="border-white/10 bg-zinc-950/55 overflow-hidden">
@@ -176,7 +176,6 @@ export default function AdminToday() {
                 }`} />
 
                 <CardContent className="p-4 sm:p-6">
-                  {/* Match header */}
                   <div className="flex flex-wrap items-start justify-between gap-2 mb-4">
                     <div className="flex-1 min-w-0">
                       <h2 className="text-lg font-bold text-pink-400">
@@ -195,7 +194,6 @@ export default function AdminToday() {
                     </div>
                   </div>
 
-                  {/* Team + staff info */}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
                     <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2">
                       <User className="h-4 w-4 text-pink-400 shrink-0" />
@@ -246,17 +244,16 @@ export default function AdminToday() {
                     </div>
                   </div>
 
-                  {/* Status checkboxes */}
                   <div className="mb-4">
                     <p className="text-xs text-white/40 uppercase tracking-wide mb-2">
                       Preparation Status
                     </p>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       {[
-                        { field: "umpire_reached", label: "Umpire Reached", icon: <User className="h-4 w-4" /> },
-                        { field: "water_arranged", label: "Water Arranged", icon: <Droplets className="h-4 w-4" /> },
-                        { field: "balls_ready",    label: "Balls Ready",    icon: <Circle className="h-4 w-4" /> },
-                        { field: "ground_ready",   label: "Ground Ready",   icon: <CheckCircle className="h-4 w-4" /> },
+                        { field: "umpire_arranged", label: "Umpire Arranged", icon: <User className="h-4 w-4" /> },
+                        { field: "water_arranged",  label: "Water Arranged",  icon: <Droplets className="h-4 w-4" /> },
+                        { field: "balls_ready",     label: "Balls Ready",     icon: <Circle className="h-4 w-4" /> },
+                        { field: "ground_ready",    label: "Ground Ready",    icon: <CheckCircle className="h-4 w-4" /> },
                       ].map(({ field, label, icon }) => (
                         <button
                           key={field}
@@ -278,7 +275,6 @@ export default function AdminToday() {
                     </div>
                   </div>
 
-                  {/* Action buttons */}
                   <div className="flex flex-wrap gap-3">
                     <Button
                       onClick={() => sendWhatsAppReminder(booking)}
