@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { AdminBookingCardSkeleton } from "../components/Skeleton";
 import { toast } from "sonner";
-import { Bell } from "lucide-react";  
 import {
   CheckCircle, XCircle, MapPin, Calendar,
   Clock, CreditCard, User, MessageCircle,
