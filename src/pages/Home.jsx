@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { api, clearToken } from "../lib/api";
 import {
   Zap, Compass, Lock, Trophy, LogOut, Menu, X, Calendar, Users, LayoutDashboard,
-  MapPin, ClipboardList, UserCog, CalendarCheck, Settings, Home, BookOpen,
+  MapPin, ClipboardList, UserCog, CalendarCheck, Settings, BookOpen,
   User, Bell, ChevronRight, Star, Clock, Phone, Mail, MessageCircle,
   ArrowRight, Shield, CheckCircle, Sparkles, TrendingUp, Award, Sun, Moon
 } from "lucide-react";
@@ -13,6 +13,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
+
 
 export default function Home() {
   const navigate = useNavigate();
