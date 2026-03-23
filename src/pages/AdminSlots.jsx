@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowLeft, Calendar, Clock, MapPin, DollarSign, Edit, Trash2, Plus, RefreshCw, Loader2, Users } from "lucide-react";
+import { ArrowLeft, Calendar, Clock, DollarSign, Edit, Trash2, Plus, RefreshCw, Loader2, Users } from "lucide-react";
 
 export default function AdminSlots() {
   const navigate = useNavigate();
@@ -39,6 +39,9 @@ export default function AdminSlots() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [slotToDelete, setSlotToDelete] = useState(null);
 
+  // Debug: Log groundId to console
+  console.log("AdminSlots loaded with groundId:", groundId);
+
   useEffect(() => {
     if (!groundId) {
       toast.error("No ground ID provided");
@@ -51,11 +54,18 @@ export default function AdminSlots() {
 
   async function loadGround() {
     try {
+      console.log("Fetching ground with ID:", groundId);
       const data = await api(`/grounds/${groundId}`);
+      console.log("Ground data received:", data);
       setGround(data);
     } catch (err) {
+      console.error("Error loading ground:", err);
       toast.error(err?.message || "Failed to load ground");
-      setTimeout(() => navigate("/admin/grounds"), 2000);
+      // Don't redirect immediately, let user see the error
+      // Only redirect after 3 seconds so user can see the error
+      setTimeout(() => {
+        navigate("/admin/grounds");
+      }, 3000);
     }
   }
 
@@ -171,6 +181,19 @@ export default function AdminSlots() {
 
   const sortedDates = Object.keys(slotsByDate).sort();
 
+  // Show error if ground failed to load
+  if (!ground && !loading) {
+    return (
+      <div className="min-h-screen bg-[#070812] text-white flex items-center justify-center flex-col gap-4">
+        <p className="text-red-400 text-lg">Failed to load ground details</p>
+        <p className="text-white/50 text-sm">Ground ID: {groundId}</p>
+        <Button onClick={() => navigate("/admin/grounds")} className="bg-white/10">
+          <ArrowLeft className="h-4 w-4 mr-1" /> Back to Grounds
+        </Button>
+      </div>
+    );
+  }
+
   if (loading && !ground) {
     return (
       <div className="min-h-screen bg-[#070812] text-white flex items-center justify-center">
@@ -183,8 +206,8 @@ export default function AdminSlots() {
     <div className="min-h-screen bg-[#070812] text-white px-6 py-10">
       
       {/* Header */}
-      <Button onClick={() => navigate(-1)} className="mb-6 bg-white/10 text-white hover:bg-white/15">
-        <ArrowLeft className="h-4 w-4 mr-1" /> Back
+      <Button onClick={() => navigate("/admin/grounds")} className="mb-6 bg-white/10 text-white hover:bg-white/15">
+        <ArrowLeft className="h-4 w-4 mr-1" /> Back to Grounds
       </Button>
       
       <div className="mb-8">
