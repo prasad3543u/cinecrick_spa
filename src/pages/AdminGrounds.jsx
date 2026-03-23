@@ -1,348 +1,485 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { api } from "../lib/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import {
   Dialog, DialogContent, DialogHeader,
   DialogTitle, DialogFooter
 } from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { ArrowLeft, Calendar, Clock, MapPin, DollarSign, Edit, Trash2, Plus, RefreshCw, Loader2, Users } from "lucide-react";
 
-export default function AdminGrounds() {
+export default function AdminSlots() {
   const navigate = useNavigate();
-
-  const [form, setForm] = useState({
-    name: "", location: "", sport_type: "Cricket",
-    price_per_hour: "", opening_time: "", closing_time: "",
-    image_url: "", amenities: "", admin_name: "", admin_phone: "",
+  const { groundId } = useParams();
+  const [ground, setGround] = useState(null);
+  const [slots, setSlots] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [generating, setGenerating] = useState(false);
+  const [selectedDate, setSelectedDate] = useState("");
+  const [showCustomSlotDialog, setShowCustomSlotDialog] = useState(false);
+  const [customSlot, setCustomSlot] = useState({
+    start_time: "",
+    end_time: "",
+    price: "",
+    max_teams: 2
   });
-
-  const [grounds, setGrounds] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [loadingGrounds, setLoadingGrounds] = useState(true);
-
-  const [editGround, setEditGround] = useState(null);
-  const [editForm, setEditForm] = useState({});
-  const [editLoading, setEditLoading] = useState(false);
-
-  const [blockGroundId, setBlockGroundId] = useState(null);
-  const [blockDate, setBlockDate] = useState("");
-  const [blockLoading, setBlockLoading] = useState(false);
-  const [blockedDates, setBlockedDates] = useState([]);
+  const [editingSlot, setEditingSlot] = useState(null);
+  const [editForm, setEditForm] = useState({ start_time: "", end_time: "", price: "" });
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [slotToDelete, setSlotToDelete] = useState(null);
 
   useEffect(() => {
-    loadGrounds();
-  }, []);
+    if (!groundId) {
+      toast.error("No ground ID provided");
+      navigate("/admin/grounds");
+      return;
+    }
+    loadGround();
+    loadSlots();
+  }, [groundId]);
 
-  async function loadGrounds() {
+  async function loadGround() {
     try {
-      setLoadingGrounds(true);
-      const data = await api("/grounds");
-      setGrounds(Array.isArray(data) ? data : []);
+      const data = await api(`/grounds/${groundId}`);
+      setGround(data);
     } catch (err) {
-      toast.error(err?.message || "Failed to load grounds");
-    } finally {
-      setLoadingGrounds(false);
+      toast.error(err?.message || "Failed to load ground");
+      setTimeout(() => navigate("/admin/grounds"), 2000);
     }
   }
 
-  async function loadBlockedDates(groundId) {
-    try {
-      const data = await api(`/admin/blocked_dates?ground_id=${groundId}`);
-      setBlockedDates(Array.isArray(data) ? data : []);
-    } catch (err) {
-      console.error(err);
-    }
-  }
-
-  function handleChange(e) {
-    const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
-  }
-
-  function handleEditChange(e) {
-    const { name, value } = e.target;
-    setEditForm((prev) => ({ ...prev, [name]: value }));
-  }
-
-  async function handleSubmit(e) {
-    e.preventDefault();
+  async function loadSlots() {
     try {
       setLoading(true);
-      toast.info("Adding ground...");
-      await api("/grounds", {
-        method: "POST",
-        body: {
-          name: form.name.trim(),
-          location: form.location.trim(),
-          sport_type: form.sport_type.trim(),
-          price_per_hour: Number(form.price_per_hour),
-          opening_time: form.opening_time.trim(),
-          closing_time: form.closing_time.trim(),
-          image_url: form.image_url.trim(),
-          amenities: form.amenities.trim(),
-          admin_name: form.admin_name.trim(),
-          admin_phone: form.admin_phone.trim(),
-        },
-      });
-      toast.success("Ground added successfully!");
-      setForm({
-        name: "", location: "", sport_type: "Cricket",
-        price_per_hour: "", opening_time: "", closing_time: "",
-        image_url: "", amenities: "", admin_name: "", admin_phone: "",
-      });
-      await loadGrounds();
+      const data = await api(`/slots?ground_id=${groundId}`);
+      setSlots(Array.isArray(data) ? data : []);
     } catch (err) {
-      toast.error(err?.message || "Failed to add ground");
+      toast.error("Failed to load slots");
     } finally {
       setLoading(false);
     }
   }
 
-  function openEdit(ground) {
-    setEditGround(ground);
-    setEditForm({
-      name: ground.name,
-      location: ground.location,
-      sport_type: ground.sport_type,
-      price_per_hour: ground.price_per_hour,
-      opening_time: ground.opening_time,
-      closing_time: ground.closing_time,
-      image_url: ground.image_url || "",
-      amenities: ground.amenities || "",
-      admin_name: ground.admin_name || "",
-      admin_phone: ground.admin_phone || "",
-    });
-  }
-
-  async function handleEditSubmit() {
-    try {
-      setEditLoading(true);
-      toast.info("Updating ground...");
-      await api(`/grounds/${editGround.id}`, {
-        method: "PATCH",
-        body: editForm,
-      });
-      toast.success("Ground updated successfully!");
-      setEditGround(null);
-      await loadGrounds();
-    } catch (err) {
-      toast.error(err?.message || "Failed to update ground");
-    } finally {
-      setEditLoading(false);
-    }
-  }
-
-  async function handleDelete(groundId) {
-    const confirmed = window.confirm("Are you sure you want to delete this ground? All slots and bookings will be deleted too.");
-    if (!confirmed) return;
-    try {
-      toast.info("Deleting ground...");
-      await api(`/grounds/${groundId}`, { method: "DELETE" });
-      toast.success("Ground deleted successfully!");
-      await loadGrounds();
-    } catch (err) {
-      toast.error(err?.message || "Failed to delete ground");
-    }
-  }
-
-  async function handleBlockDate(groundId) {
-    if (!blockDate) {
-      toast.error("Please select a date to block.");
+  async function generateDefaultSlots() {
+    if (!selectedDate) {
+      toast.error("Please select a date");
       return;
     }
+
+    setGenerating(true);
     try {
-      setBlockLoading(true);
-      toast.info("Blocking date...");
-      await api("/admin/block_date", {
+      await api(`/grounds/${groundId}/generate_slots`, {
         method: "POST",
-        body: { ground_id: groundId, date: blockDate },
+        body: { slot_date: selectedDate }
       });
-      toast.success(`Date ${blockDate} blocked successfully!`);
-      setBlockDate("");
-      await loadBlockedDates(groundId);
+      toast.success(`Default slots generated for ${selectedDate}`);
+      setSelectedDate("");
+      loadSlots();
     } catch (err) {
-      toast.error(err?.message || "Failed to block date");
+      toast.error(err?.message || "Failed to generate slots");
     } finally {
-      setBlockLoading(false);
+      setGenerating(false);
     }
   }
 
-  async function handleUnblockDate(groundId, date) {
-    try {
-      toast.info("Unblocking date...");
-      await api("/admin/unblock_date", {
-        method: "DELETE",
-        body: { ground_id: groundId, date: date },
-      });
-      toast.success(`Date ${date} unblocked successfully!`);
-      await loadBlockedDates(groundId);
-    } catch (err) {
-      toast.error(err?.message || "Failed to unblock date");
+  async function generateCustomSlot() {
+    if (!selectedDate) {
+      toast.error("Please select a date first");
+      return;
     }
+    if (!customSlot.start_time || !customSlot.end_time) {
+      toast.error("Please enter start and end time");
+      return;
+    }
+    if (!customSlot.price || customSlot.price <= 0) {
+      toast.error("Please enter a valid price");
+      return;
+    }
+
+    setGenerating(true);
+    try {
+      await api("/slots", {
+        method: "POST",
+        body: {
+          ground_id: parseInt(groundId),
+          slot_date: selectedDate,
+          start_time: customSlot.start_time,
+          end_time: customSlot.end_time,
+          price: customSlot.price,
+          max_teams: customSlot.max_teams,
+          status: "available"
+        }
+      });
+      toast.success(`Custom slot ${customSlot.start_time}-${customSlot.end_time} created`);
+      setShowCustomSlotDialog(false);
+      setCustomSlot({ start_time: "", end_time: "", price: "", max_teams: 2 });
+      loadSlots();
+    } catch (err) {
+      toast.error(err?.message || "Failed to create slot");
+    } finally {
+      setGenerating(false);
+    }
+  }
+
+  async function updateSlot() {
+    if (!editingSlot) return;
+    
+    try {
+      await api(`/slots/${editingSlot.id}`, {
+        method: "PATCH",
+        body: editForm
+      });
+      toast.success("Slot updated successfully");
+      setEditingSlot(null);
+      loadSlots();
+    } catch (err) {
+      toast.error(err?.message || "Failed to update slot");
+    }
+  }
+
+  async function deleteSlot() {
+    if (!slotToDelete) return;
+    
+    try {
+      await api(`/slots/${slotToDelete.id}`, { method: "DELETE" });
+      toast.success("Slot deleted successfully");
+      setShowDeleteDialog(false);
+      setSlotToDelete(null);
+      loadSlots();
+    } catch (err) {
+      toast.error(err?.message || "Failed to delete slot");
+    }
+  }
+
+  // Group slots by date
+  const slotsByDate = slots.reduce((acc, slot) => {
+    if (!acc[slot.slot_date]) acc[slot.slot_date] = [];
+    acc[slot.slot_date].push(slot);
+    return acc;
+  }, {});
+
+  const sortedDates = Object.keys(slotsByDate).sort();
+
+  if (loading && !ground) {
+    return (
+      <div className="min-h-screen bg-[#070812] text-white flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-pink-500" />
+      </div>
+    );
   }
 
   return (
     <div className="min-h-screen bg-[#070812] text-white px-6 py-10">
+      
+      {/* Header */}
       <Button onClick={() => navigate(-1)} className="mb-6 bg-white/10 text-white hover:bg-white/15">
-        ← Back
+        <ArrowLeft className="h-4 w-4 mr-1" /> Back
       </Button>
-      <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-4xl font-black text-pink-400">Admin Grounds</h1>
-        <div className="flex gap-3">
-          <Button onClick={() => navigate("/admin/dashboard")} className="bg-white/10 text-white hover:bg-white/15">
-            Dashboard
-          </Button>
-          <Button onClick={() => navigate("/grounds")} className="bg-white/10 text-white hover:bg-white/15">
-            View Grounds
-          </Button>
+      
+      <div className="mb-8">
+        <h1 className="text-4xl font-black text-pink-400">Manage Slots</h1>
+        {ground && (
+          <p className="text-white/50 text-sm mt-1">
+            {ground.name} • {ground.location}
+          </p>
+        )}
+      </div>
+
+      {/* Date Selection */}
+      <div className="mb-6">
+        <Label className="text-white/70 text-sm">Select Date</Label>
+        <div className="flex flex-col sm:flex-row gap-3 mt-1">
+          <Input
+            type="date"
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            className="bg-black/40 border-white/10 text-white w-full sm:w-64"
+            min={new Date().toISOString().split('T')[0]}
+          />
         </div>
       </div>
 
-      <div className="grid gap-8 lg:grid-cols-2">
-        {/* Add Ground Form */}
+      {/* Two Generation Options */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        
+        {/* Option 1: Default 3 Slots */}
         <Card className="border-white/10 bg-zinc-950/55">
           <CardContent className="p-6">
-            <h2 className="mb-5 text-2xl font-bold">Add New Ground</h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <Input name="name" placeholder="Ground Name" value={form.name} onChange={handleChange} className="bg-black/40 border-white/10" required />
-              <Input name="location" placeholder="Location" value={form.location} onChange={handleChange} className="bg-black/40 border-white/10" required />
-              <Input name="sport_type" placeholder="Sport Type" value={form.sport_type} onChange={handleChange} className="bg-black/40 border-white/10" required />
-              <Input name="price_per_hour" type="number" placeholder="Price Per Hour" value={form.price_per_hour} onChange={handleChange} className="bg-black/40 border-white/10" required />
-              <Input name="opening_time" placeholder="Opening Time (e.g. 06:00)" value={form.opening_time} onChange={handleChange} className="bg-black/40 border-white/10" required />
-              <Input name="closing_time" placeholder="Closing Time (e.g. 22:00)" value={form.closing_time} onChange={handleChange} className="bg-black/40 border-white/10" required />
-              <Input name="image_url" placeholder="Image URL" value={form.image_url} onChange={handleChange} className="bg-black/40 border-white/10" />
-              <Input name="amenities" placeholder="Amenities (comma separated)" value={form.amenities} onChange={handleChange} className="bg-black/40 border-white/10" />
-              <Input name="admin_name" placeholder="Ground Owner Name" value={form.admin_name} onChange={handleChange} className="bg-black/40 border-white/10" required />
-              <Input name="admin_phone" placeholder="WhatsApp Number" value={form.admin_phone} onChange={handleChange} className="bg-black/40 border-white/10" required />
-              <Button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-pink-500 to-violet-500">
-                {loading ? "Adding..." : "Add Ground"}
-              </Button>
-            </form>
+            <h2 className="text-xl font-bold mb-3 flex items-center gap-2">
+              <RefreshCw className="h-5 w-5 text-emerald-400" />
+              Default Slots
+            </h2>
+            <p className="text-white/50 text-sm mb-4">
+              Generate 3 standard slots: Morning (06:30-09:30), Mid-Day (09:30-12:30), Evening (13:00-18:00)
+            </p>
+            <Button
+              onClick={generateDefaultSlots}
+              disabled={generating || !selectedDate}
+              className="bg-emerald-500 hover:bg-emerald-600"
+            >
+              {generating ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Generating...</>
+              ) : (
+                <><RefreshCw className="h-4 w-4 mr-2" /> Generate 3 Default Slots</>
+              )}
+            </Button>
           </CardContent>
         </Card>
 
-        {/* Existing Grounds */}
-        <Card className="border-white/10 bg-zinc-950/55">
+        {/* Option 2: Custom Slot */}
+        <Card className="border-white/10 bg-zinc-950/55 border-pink-500/30">
           <CardContent className="p-6">
-            <h2 className="mb-5 text-2xl font-bold">Existing Grounds</h2>
-            {loadingGrounds ? (
-              <p className="text-white/70">Loading grounds...</p>
-            ) : grounds.length === 0 ? (
-              <p className="text-white/70">No grounds found.</p>
-            ) : (
-              <div className="space-y-4 max-h-[600px] overflow-y-auto pr-1">
-                {grounds.map((ground) => (
-                  <div key={ground.id} className="rounded-2xl border border-white/10 bg-white/5 p-4 space-y-3">
-                    <div>
-                      <h3 className="text-lg font-bold text-pink-400">{ground.name}</h3>
-                      <p className="text-white/70">{ground.location}</p>
-                      <p className="text-white/70">Sport: {ground.sport_type}</p>
-                      <p className="text-white/70">₹{ground.price_per_hour}/hour</p>
-                      <p className="text-white/60 text-sm">{ground.opening_time} - {ground.closing_time}</p>
-                      <p className="text-white/70 text-sm">Owner: {ground.admin_name || "Not set"}</p>
-                      <p className="text-white/70 text-sm">WhatsApp: {ground.admin_phone || "Not set"}</p>
-                    </div>
-
-                    <div className="flex flex-wrap gap-2">
-                      <Button type="button" onClick={() => openEdit(ground)} className="bg-violet-500/20 border border-violet-500/30 text-violet-300 hover:bg-violet-500/30">
-                        Edit
-                      </Button>
-                      <Button type="button" onClick={() => handleDelete(ground.id)} className="bg-red-500/20 border border-red-500/30 text-red-300 hover:bg-red-500/30">
-                        Delete
-                      </Button>
-                      <Button type="button" onClick={() => navigate("/admin/slots")} className="bg-white/10 text-white hover:bg-white/15">
-                        Manage Slots
-                      </Button>
-                    </div>
-
-                    {/* Block Date */}
-                    <div className="border-t border-white/10 pt-3">
-                      <p className="text-sm text-white/60 mb-2">Block a date for this ground:</p>
-                      <div className="flex gap-2">
-                        <input
-                          type="date"
-                          value={blockGroundId === ground.id ? blockDate : ""}
-                          onChange={(e) => {
-                            setBlockGroundId(ground.id);
-                            setBlockDate(e.target.value);
-                          }}
-                          className="rounded-lg border border-white/10 bg-zinc-900 px-3 py-2 text-white text-sm flex-1"
-                        />
-                        <Button
-                          type="button"
-                          disabled={blockLoading && blockGroundId === ground.id}
-                          onClick={() => {
-                            setBlockGroundId(ground.id);
-                            handleBlockDate(ground.id);
-                          }}
-                          className="bg-orange-500/20 border border-orange-500/30 text-orange-300 hover:bg-orange-500/30 text-sm"
-                        >
-                          {blockLoading && blockGroundId === ground.id ? "Blocking..." : "Block"}
-                        </Button>
-                      </div>
-
-                      <button
-                        type="button"
-                        onClick={() => loadBlockedDates(ground.id)}
-                        className="text-xs text-white/50 hover:text-white/80 mt-2 underline"
-                      >
-                        View blocked dates
-                      </button>
-
-                      {blockedDates.filter(b => b.ground_id === ground.id).length > 0 && (
-                        <div className="mt-2 space-y-1">
-                          {blockedDates
-                            .filter(b => b.ground_id === ground.id)
-                            .map((b) => (
-                              <div key={b.date} className="flex items-center justify-between text-xs">
-                                <span className="text-orange-300">{b.date} — {b.slots_count} slots blocked</span>
-                                <button
-                                  type="button"
-                                  onClick={() => handleUnblockDate(ground.id, b.date)}
-                                  className="text-red-400 hover:text-red-300 underline ml-2"
-                                >
-                                  Unblock
-                                </button>
-                              </div>
-                            ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+            <h2 className="text-xl font-bold mb-3 flex items-center gap-2">
+              <Plus className="h-5 w-5 text-pink-400" />
+              Custom Slot
+            </h2>
+            <p className="text-white/50 text-sm mb-4">
+              Create a slot with any custom time
+            </p>
+            <Button
+              onClick={() => setShowCustomSlotDialog(true)}
+              disabled={!selectedDate}
+              className="bg-pink-500 hover:bg-pink-600"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Create Custom Slot
+            </Button>
           </CardContent>
         </Card>
       </div>
 
-      {/* Edit Ground Dialog */}
-      <Dialog open={!!editGround} onOpenChange={() => setEditGround(null)}>
-        <DialogContent className="sm:max-w-lg bg-zinc-950 text-white border-white/10 max-h-[90vh] overflow-y-auto">
+      {/* Existing Slots */}
+      <h2 className="text-2xl font-bold mb-4">Existing Slots</h2>
+
+      {loading ? (
+        <div className="text-center py-12 text-white/50">Loading slots...</div>
+      ) : sortedDates.length === 0 ? (
+        <Card className="border-white/10 bg-zinc-950/55">
+          <CardContent className="p-12 text-center">
+            <Calendar className="h-12 w-12 mx-auto text-white/20 mb-3" />
+            <p className="text-white/50">No slots found</p>
+            <p className="text-white/30 text-sm mt-1">
+              Select a date and generate default slots or create a custom slot
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="space-y-6">
+          {sortedDates.map((date) => (
+            <div key={date}>
+              <h3 className="text-lg font-semibold text-emerald-400 mb-3 flex items-center gap-2">
+                <Calendar className="h-4 w-4" />
+                {new Date(date).toLocaleDateString("en-IN", {
+                  weekday: "long",
+                  year: "numeric",
+                  month: "long",
+                  day: "numeric"
+                })}
+              </h3>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {slotsByDate[date].map((slot) => (
+                  <Card key={slot.id} className="border-white/10 bg-zinc-950/55">
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <Clock className="h-4 w-4 text-pink-400" />
+                          <span className="font-semibold">
+                            {slot.start_time} - {slot.end_time}
+                          </span>
+                        </div>
+                        <div className="flex gap-1">
+                          <button
+                            onClick={() => {
+                              setEditingSlot(slot);
+                              setEditForm({
+                                start_time: slot.start_time,
+                                end_time: slot.end_time,
+                                price: slot.price
+                              });
+                            }}
+                            className="p-1 rounded hover:bg-white/10 text-blue-400"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              setSlotToDelete(slot);
+                              setShowDeleteDialog(true);
+                            }}
+                            className="p-1 rounded hover:bg-white/10 text-red-400"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-white/60">
+                        <DollarSign className="h-3 w-3" />
+                        ₹{slot.price} per team
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-white/60 mt-1">
+                        <Users className="h-3 w-3" />
+                        Teams: {slot.teams_booked_count || 0} / {slot.max_teams || 2}
+                      </div>
+                      <div className={`text-xs mt-2 px-2 py-1 rounded-full inline-block ${
+                        slot.status === "available" ? "bg-green-500/20 text-green-400" :
+                        slot.status === "booked" ? "bg-red-500/20 text-red-400" :
+                        slot.status === "pending" ? "bg-yellow-500/20 text-yellow-400" :
+                        "bg-gray-500/20 text-gray-400"
+                      }`}>
+                        {slot.status || "available"}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Custom Slot Dialog */}
+      <Dialog open={showCustomSlotDialog} onOpenChange={setShowCustomSlotDialog}>
+        <DialogContent className="sm:max-w-md bg-zinc-950 text-white border-white/10">
           <DialogHeader>
-            <DialogTitle className="text-pink-400">Edit Ground</DialogTitle>
+            <DialogTitle className="text-pink-400">Create Custom Slot</DialogTitle>
           </DialogHeader>
-          <div className="space-y-3">
-            <Input name="name" placeholder="Ground Name" value={editForm.name || ""} onChange={handleEditChange} className="bg-black/40 border-white/10" />
-            <Input name="location" placeholder="Location" value={editForm.location || ""} onChange={handleEditChange} className="bg-black/40 border-white/10" />
-            <Input name="sport_type" placeholder="Sport Type" value={editForm.sport_type || ""} onChange={handleEditChange} className="bg-black/40 border-white/10" />
-            <Input name="price_per_hour" type="number" placeholder="Price Per Hour" value={editForm.price_per_hour || ""} onChange={handleEditChange} className="bg-black/40 border-white/10" />
-            <Input name="opening_time" placeholder="Opening Time" value={editForm.opening_time || ""} onChange={handleEditChange} className="bg-black/40 border-white/10" />
-            <Input name="closing_time" placeholder="Closing Time" value={editForm.closing_time || ""} onChange={handleEditChange} className="bg-black/40 border-white/10" />
-            <Input name="image_url" placeholder="Image URL" value={editForm.image_url || ""} onChange={handleEditChange} className="bg-black/40 border-white/10" />
-            <Input name="amenities" placeholder="Amenities" value={editForm.amenities || ""} onChange={handleEditChange} className="bg-black/40 border-white/10" />
-            <Input name="admin_name" placeholder="Ground Owner Name" value={editForm.admin_name || ""} onChange={handleEditChange} className="bg-black/40 border-white/10" />
-            <Input name="admin_phone" placeholder="WhatsApp Number" value={editForm.admin_phone || ""} onChange={handleEditChange} className="bg-black/40 border-white/10" />
+          <div className="space-y-4 py-4">
+            <p className="text-sm text-white/50">
+              Date: <span className="text-white">{selectedDate}</span>
+            </p>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-white/70">Start Time</Label>
+                <Input
+                  type="time"
+                  value={customSlot.start_time}
+                  onChange={(e) => setCustomSlot({ ...customSlot, start_time: e.target.value })}
+                  className="bg-black/40 border-white/10 text-white mt-1"
+                />
+              </div>
+              <div>
+                <Label className="text-white/70">End Time</Label>
+                <Input
+                  type="time"
+                  value={customSlot.end_time}
+                  onChange={(e) => setCustomSlot({ ...customSlot, end_time: e.target.value })}
+                  className="bg-black/40 border-white/10 text-white mt-1"
+                />
+              </div>
+            </div>
+            <div>
+              <Label className="text-white/70">Price (per team)</Label>
+              <Input
+                type="number"
+                value={customSlot.price}
+                onChange={(e) => setCustomSlot({ ...customSlot, price: e.target.value })}
+                placeholder="e.g., 2500"
+                className="bg-black/40 border-white/10 text-white mt-1"
+              />
+            </div>
+            <div>
+              <Label className="text-white/70">Max Teams</Label>
+              <Select
+                value={customSlot.max_teams.toString()}
+                onValueChange={(val) => setCustomSlot({ ...customSlot, max_teams: parseInt(val) })}
+              >
+                <SelectTrigger className="bg-black/40 border-white/10 text-white">
+                  <SelectValue placeholder="Select max teams" />
+                </SelectTrigger>
+                <SelectContent className="bg-zinc-900 border-white/10 text-white">
+                  <SelectItem value="1">1 Team</SelectItem>
+                  <SelectItem value="2">2 Teams</SelectItem>
+                  <SelectItem value="3">3 Teams</SelectItem>
+                  <SelectItem value="4">4 Teams</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <DialogFooter className="gap-2">
-            <Button variant="secondary" onClick={() => setEditGround(null)} className="bg-white/10 text-white hover:bg-white/15">
+            <Button variant="secondary" onClick={() => setShowCustomSlotDialog(false)} className="bg-white/10 text-white hover:bg-white/15">
               Cancel
             </Button>
-            <Button onClick={handleEditSubmit} disabled={editLoading} className="bg-gradient-to-r from-pink-500 to-violet-500">
-              {editLoading ? "Saving..." : "Save Changes"}
+            <Button onClick={generateCustomSlot} disabled={generating} className="bg-pink-500 hover:bg-pink-600">
+              {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : "Create Slot"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Slot Dialog */}
+      <Dialog open={!!editingSlot} onOpenChange={() => setEditingSlot(null)}>
+        <DialogContent className="sm:max-w-md bg-zinc-950 text-white border-white/10">
+          <DialogHeader>
+            <DialogTitle className="text-pink-400">Edit Slot</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-white/70">Start Time</Label>
+                <Input
+                  type="time"
+                  value={editForm.start_time}
+                  onChange={(e) => setEditForm({ ...editForm, start_time: e.target.value })}
+                  className="bg-black/40 border-white/10 text-white mt-1"
+                />
+              </div>
+              <div>
+                <Label className="text-white/70">End Time</Label>
+                <Input
+                  type="time"
+                  value={editForm.end_time}
+                  onChange={(e) => setEditForm({ ...editForm, end_time: e.target.value })}
+                  className="bg-black/40 border-white/10 text-white mt-1"
+                />
+              </div>
+            </div>
+            <div>
+              <Label className="text-white/70">Price (per team)</Label>
+              <Input
+                type="number"
+                value={editForm.price}
+                onChange={(e) => setEditForm({ ...editForm, price: e.target.value })}
+                className="bg-black/40 border-white/10 text-white mt-1"
+              />
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="secondary" onClick={() => setEditingSlot(null)} className="bg-white/10 text-white hover:bg-white/15">
+              Cancel
+            </Button>
+            <Button onClick={updateSlot} className="bg-emerald-500 hover:bg-emerald-600">
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent className="sm:max-w-md bg-zinc-950 text-white border-white/10">
+          <DialogHeader>
+            <DialogTitle className="text-red-400">Delete Slot</DialogTitle>
+          </DialogHeader>
+          <p className="text-white/70">
+            Are you sure you want to delete this slot? This action cannot be undone.
+          </p>
+          <DialogFooter className="gap-2">
+            <Button variant="secondary" onClick={() => setShowDeleteDialog(false)} className="bg-white/10 text-white hover:bg-white/15">
+              Cancel
+            </Button>
+            <Button onClick={deleteSlot} className="bg-red-500 hover:bg-red-600">
+              Delete
             </Button>
           </DialogFooter>
         </DialogContent>
