@@ -1,21 +1,14 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { api } from "../lib/api";
-import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import {
-  ArrowLeft, Calendar, Clock, MapPin, DollarSign,
-  Edit, Trash2, Plus, RefreshCw, Loader2, Users, X
-} from "lucide-react";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
+  Dialog, DialogContent, DialogHeader,
+  DialogTitle, DialogFooter
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -24,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ArrowLeft, Calendar, Clock, MapPin, DollarSign, Edit, Trash2, Plus, RefreshCw, Loader2, Users } from "lucide-react";
 
 export default function AdminSlots() {
   const navigate = useNavigate();
@@ -45,9 +39,6 @@ export default function AdminSlots() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [slotToDelete, setSlotToDelete] = useState(null);
 
-  // Debug: Log groundId to console
-  console.log("Ground ID from URL:", groundId);
-
   useEffect(() => {
     if (!groundId) {
       toast.error("No ground ID provided");
@@ -60,14 +51,10 @@ export default function AdminSlots() {
 
   async function loadGround() {
     try {
-      console.log("Loading ground with ID:", groundId);
       const data = await api(`/grounds/${groundId}`);
-      console.log("Ground data received:", data);
       setGround(data);
     } catch (err) {
-      console.error("Error loading ground:", err);
-      toast.error(err.message || "Failed to load ground");
-      // Navigate back to grounds page after error
+      toast.error(err?.message || "Failed to load ground");
       setTimeout(() => navigate("/admin/grounds"), 2000);
     }
   }
@@ -92,7 +79,7 @@ export default function AdminSlots() {
 
     setGenerating(true);
     try {
-      const response = await api(`/grounds/${groundId}/generate_slots`, {
+      await api(`/grounds/${groundId}/generate_slots`, {
         method: "POST",
         body: { slot_date: selectedDate }
       });
@@ -100,7 +87,7 @@ export default function AdminSlots() {
       setSelectedDate("");
       loadSlots();
     } catch (err) {
-      toast.error(err.message || "Failed to generate slots");
+      toast.error(err?.message || "Failed to generate slots");
     } finally {
       setGenerating(false);
     }
@@ -139,7 +126,7 @@ export default function AdminSlots() {
       setCustomSlot({ start_time: "", end_time: "", price: "", max_teams: 2 });
       loadSlots();
     } catch (err) {
-      toast.error(err.message || "Failed to create slot");
+      toast.error(err?.message || "Failed to create slot");
     } finally {
       setGenerating(false);
     }
@@ -157,7 +144,7 @@ export default function AdminSlots() {
       setEditingSlot(null);
       loadSlots();
     } catch (err) {
-      toast.error(err.message || "Failed to update slot");
+      toast.error(err?.message || "Failed to update slot");
     }
   }
 
@@ -165,15 +152,13 @@ export default function AdminSlots() {
     if (!slotToDelete) return;
     
     try {
-      await api(`/slots/${slotToDelete.id}`, {
-        method: "DELETE"
-      });
+      await api(`/slots/${slotToDelete.id}`, { method: "DELETE" });
       toast.success("Slot deleted successfully");
       setShowDeleteDialog(false);
       setSlotToDelete(null);
       loadSlots();
     } catch (err) {
-      toast.error(err.message || "Failed to delete slot");
+      toast.error(err?.message || "Failed to delete slot");
     }
   }
 
@@ -186,7 +171,6 @@ export default function AdminSlots() {
 
   const sortedDates = Object.keys(slotsByDate).sort();
 
-  // Show loading state
   if (loading && !ground) {
     return (
       <div className="min-h-screen bg-[#070812] text-white flex items-center justify-center">
@@ -196,34 +180,20 @@ export default function AdminSlots() {
   }
 
   return (
-    <div className="min-h-screen bg-[#070812] text-white px-4 sm:px-6 py-8">
+    <div className="min-h-screen bg-[#070812] text-white px-6 py-10">
       
       {/* Header */}
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <Button
-            onClick={() => navigate("/admin/grounds")}
-            variant="ghost"
-            className="text-white/70 hover:text-white hover:bg-white/10"
-          >
-            <ArrowLeft className="h-5 w-5 mr-1" />
-            Back to Grounds
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold text-pink-400">
-              Manage Slots
-            </h1>
-            {ground ? (
-              <p className="text-white/50 text-sm mt-1">
-                {ground.name} • {ground.location}
-              </p>
-            ) : (
-              <p className="text-red-400 text-sm mt-1">
-                Loading ground details...
-              </p>
-            )}
-          </div>
-        </div>
+      <Button onClick={() => navigate(-1)} className="mb-6 bg-white/10 text-white hover:bg-white/15">
+        <ArrowLeft className="h-4 w-4 mr-1" /> Back
+      </Button>
+      
+      <div className="mb-8">
+        <h1 className="text-4xl font-black text-pink-400">Manage Slots</h1>
+        {ground && (
+          <p className="text-white/50 text-sm mt-1">
+            {ground.name} • {ground.location}
+          </p>
+        )}
       </div>
 
       {/* Date Selection */}
@@ -234,7 +204,7 @@ export default function AdminSlots() {
             type="date"
             value={selectedDate}
             onChange={(e) => setSelectedDate(e.target.value)}
-            className="bg-black/40 border-white/10 text-white w-full sm:w-auto"
+            className="bg-black/40 border-white/10 text-white w-full sm:w-64"
             min={new Date().toISOString().split('T')[0]}
           />
         </div>
@@ -256,7 +226,7 @@ export default function AdminSlots() {
             <Button
               onClick={generateDefaultSlots}
               disabled={generating || !selectedDate}
-              className="bg-emerald-500 hover:bg-emerald-600 w-full sm:w-auto"
+              className="bg-emerald-500 hover:bg-emerald-600"
             >
               {generating ? (
                 <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Generating...</>
@@ -280,7 +250,7 @@ export default function AdminSlots() {
             <Button
               onClick={() => setShowCustomSlotDialog(true)}
               disabled={!selectedDate}
-              className="bg-pink-500 hover:bg-pink-600 w-full sm:w-auto"
+              className="bg-pink-500 hover:bg-pink-600"
             >
               <Plus className="h-4 w-4 mr-2" />
               Create Custom Slot
@@ -290,10 +260,7 @@ export default function AdminSlots() {
       </div>
 
       {/* Existing Slots */}
-      <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-        <Calendar className="h-5 w-5 text-pink-400" />
-        Existing Slots
-      </h2>
+      <h2 className="text-2xl font-bold mb-4">Existing Slots</h2>
 
       {loading ? (
         <div className="text-center py-12 text-white/50">Loading slots...</div>
@@ -320,7 +287,7 @@ export default function AdminSlots() {
                   day: "numeric"
                 })}
               </h3>
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {slotsByDate[date].map((slot) => (
                   <Card key={slot.id} className="border-white/10 bg-zinc-950/55">
                     <CardContent className="p-4">
@@ -383,12 +350,9 @@ export default function AdminSlots() {
 
       {/* Custom Slot Dialog */}
       <Dialog open={showCustomSlotDialog} onOpenChange={setShowCustomSlotDialog}>
-        <DialogContent className="bg-zinc-950 border-white/10 text-white sm:max-w-md">
+        <DialogContent className="sm:max-w-md bg-zinc-950 text-white border-white/10">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Plus className="h-5 w-5 text-pink-400" />
-              Create Custom Slot
-            </DialogTitle>
+            <DialogTitle className="text-pink-400">Create Custom Slot</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <p className="text-sm text-white/50">
@@ -396,7 +360,7 @@ export default function AdminSlots() {
             </p>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label>Start Time</Label>
+                <Label className="text-white/70">Start Time</Label>
                 <Input
                   type="time"
                   value={customSlot.start_time}
@@ -405,7 +369,7 @@ export default function AdminSlots() {
                 />
               </div>
               <div>
-                <Label>End Time</Label>
+                <Label className="text-white/70">End Time</Label>
                 <Input
                   type="time"
                   value={customSlot.end_time}
@@ -415,7 +379,7 @@ export default function AdminSlots() {
               </div>
             </div>
             <div>
-              <Label>Price (per team)</Label>
+              <Label className="text-white/70">Price (per team)</Label>
               <Input
                 type="number"
                 value={customSlot.price}
@@ -425,7 +389,7 @@ export default function AdminSlots() {
               />
             </div>
             <div>
-              <Label>Max Teams</Label>
+              <Label className="text-white/70">Max Teams</Label>
               <Select
                 value={customSlot.max_teams.toString()}
                 onValueChange={(val) => setCustomSlot({ ...customSlot, max_teams: parseInt(val) })}
@@ -443,26 +407,26 @@ export default function AdminSlots() {
             </div>
           </div>
           <DialogFooter className="gap-2">
-            <Button variant="secondary" onClick={() => setShowCustomSlotDialog(false)}>
+            <Button variant="secondary" onClick={() => setShowCustomSlotDialog(false)} className="bg-white/10 text-white hover:bg-white/15">
               Cancel
             </Button>
-            <Button onClick={generateCustomSlot} disabled={generating} className="bg-pink-500">
+            <Button onClick={generateCustomSlot} disabled={generating} className="bg-pink-500 hover:bg-pink-600">
               {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : "Create Slot"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Edit Dialog */}
+      {/* Edit Slot Dialog */}
       <Dialog open={!!editingSlot} onOpenChange={() => setEditingSlot(null)}>
-        <DialogContent className="bg-zinc-950 border-white/10 text-white">
+        <DialogContent className="sm:max-w-md bg-zinc-950 text-white border-white/10">
           <DialogHeader>
-            <DialogTitle>Edit Slot</DialogTitle>
+            <DialogTitle className="text-pink-400">Edit Slot</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label>Start Time</Label>
+                <Label className="text-white/70">Start Time</Label>
                 <Input
                   type="time"
                   value={editForm.start_time}
@@ -471,7 +435,7 @@ export default function AdminSlots() {
                 />
               </div>
               <div>
-                <Label>End Time</Label>
+                <Label className="text-white/70">End Time</Label>
                 <Input
                   type="time"
                   value={editForm.end_time}
@@ -481,7 +445,7 @@ export default function AdminSlots() {
               </div>
             </div>
             <div>
-              <Label>Price (per team)</Label>
+              <Label className="text-white/70">Price (per team)</Label>
               <Input
                 type="number"
                 value={editForm.price}
@@ -490,11 +454,11 @@ export default function AdminSlots() {
               />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="secondary" onClick={() => setEditingSlot(null)}>
+          <DialogFooter className="gap-2">
+            <Button variant="secondary" onClick={() => setEditingSlot(null)} className="bg-white/10 text-white hover:bg-white/15">
               Cancel
             </Button>
-            <Button onClick={updateSlot} className="bg-emerald-500">
+            <Button onClick={updateSlot} className="bg-emerald-500 hover:bg-emerald-600">
               Save Changes
             </Button>
           </DialogFooter>
@@ -503,15 +467,15 @@ export default function AdminSlots() {
 
       {/* Delete Confirmation Dialog */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <DialogContent className="bg-zinc-950 border-white/10 text-white">
+        <DialogContent className="sm:max-w-md bg-zinc-950 text-white border-white/10">
           <DialogHeader>
-            <DialogTitle>Delete Slot</DialogTitle>
+            <DialogTitle className="text-red-400">Delete Slot</DialogTitle>
           </DialogHeader>
           <p className="text-white/70">
             Are you sure you want to delete this slot? This action cannot be undone.
           </p>
-          <DialogFooter>
-            <Button variant="secondary" onClick={() => setShowDeleteDialog(false)}>
+          <DialogFooter className="gap-2">
+            <Button variant="secondary" onClick={() => setShowDeleteDialog(false)} className="bg-white/10 text-white hover:bg-white/15">
               Cancel
             </Button>
             <Button onClick={deleteSlot} className="bg-red-500 hover:bg-red-600">
