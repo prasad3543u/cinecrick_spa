@@ -45,17 +45,30 @@ export default function AdminSlots() {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [slotToDelete, setSlotToDelete] = useState(null);
 
+  // Debug: Log groundId to console
+  console.log("Ground ID from URL:", groundId);
+
   useEffect(() => {
+    if (!groundId) {
+      toast.error("No ground ID provided");
+      navigate("/admin/grounds");
+      return;
+    }
     loadGround();
     loadSlots();
   }, [groundId]);
 
   async function loadGround() {
     try {
+      console.log("Loading ground with ID:", groundId);
       const data = await api(`/grounds/${groundId}`);
+      console.log("Ground data received:", data);
       setGround(data);
     } catch (err) {
-      toast.error("Failed to load ground");
+      console.error("Error loading ground:", err);
+      toast.error(err.message || "Failed to load ground");
+      // Navigate back to grounds page after error
+      setTimeout(() => navigate("/admin/grounds"), 2000);
     }
   }
 
@@ -71,7 +84,6 @@ export default function AdminSlots() {
     }
   }
 
-  // Generate default 3 slots (Morning, Mid-Day, Evening)
   async function generateDefaultSlots() {
     if (!selectedDate) {
       toast.error("Please select a date");
@@ -94,7 +106,6 @@ export default function AdminSlots() {
     }
   }
 
-  // Generate custom slot (any time)
   async function generateCustomSlot() {
     if (!selectedDate) {
       toast.error("Please select a date first");
@@ -175,6 +186,15 @@ export default function AdminSlots() {
 
   const sortedDates = Object.keys(slotsByDate).sort();
 
+  // Show loading state
+  if (loading && !ground) {
+    return (
+      <div className="min-h-screen bg-[#070812] text-white flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-pink-500" />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#070812] text-white px-4 sm:px-6 py-8">
       
@@ -187,15 +207,19 @@ export default function AdminSlots() {
             className="text-white/70 hover:text-white hover:bg-white/10"
           >
             <ArrowLeft className="h-5 w-5 mr-1" />
-            Back
+            Back to Grounds
           </Button>
           <div>
             <h1 className="text-3xl font-bold text-pink-400">
               Manage Slots
             </h1>
-            {ground && (
+            {ground ? (
               <p className="text-white/50 text-sm mt-1">
                 {ground.name} • {ground.location}
+              </p>
+            ) : (
+              <p className="text-red-400 text-sm mt-1">
+                Loading ground details...
               </p>
             )}
           </div>
@@ -244,7 +268,7 @@ export default function AdminSlots() {
         </Card>
 
         {/* Option 2: Custom Slot */}
-        <Card className="border-white/10 bg-zinc-950/55 border-emerald-500/30">
+        <Card className="border-white/10 bg-zinc-950/55 border-pink-500/30">
           <CardContent className="p-6">
             <h2 className="text-xl font-bold mb-3 flex items-center gap-2">
               <Plus className="h-5 w-5 text-pink-400" />
