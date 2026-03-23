@@ -90,12 +90,10 @@ export default function App() {
         </AdminRoute>
       } />
 
-       <Route path="/admin/grounds/:id" element={
+       <Route path="/admin/slots/:groundId" element={
         <AdminRoute>
-          <MainLayout>
-            <AdminSlots />
-          </MainLayout>
-        </AdminRoute>
+         <AdminSlots />
+        </AdminRoute> 
       } />
 
       <Route path="/admin/slots" element={
