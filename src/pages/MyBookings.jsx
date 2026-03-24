@@ -3,292 +3,514 @@ import { useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { BookingCardSkeleton } from "../components/Skeleton";
-import {
-  CheckCircle, Clock, XCircle, Calendar,
-  MapPin, CreditCard, AlertTriangle, Phone, User, Droplets, Circle
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { 
+  Calendar, Clock, MapPin, DollarSign, User, 
+  XCircle, Download, Share2, AlertCircle, 
+  Loader2, FileText, Info
 } from "lucide-react";
+import { toast } from "sonner";
+import { ConfirmDialog } from "../components/ConfirmDialog";
 
 export default function MyBookings() {
   const navigate = useNavigate();
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
   const [cancellingId, setCancellingId] = useState(null);
-  const [cancelError, setCancelError] = useState("");
-  const [cancelSuccess, setCancelSuccess] = useState("");
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
+  const [bookingToCancel, setBookingToCancel] = useState(null);
+  const [activeTab, setActiveTab] = useState("upcoming");
 
-  useEffect(() => { loadBookings(); }, []);
+  useEffect(() => {
+    loadBookings();
+  }, []);
 
   async function loadBookings() {
     try {
-      setLoading(true); setError("");
+      setLoading(true);
       const data = await api("/bookings");
       setBookings(Array.isArray(data) ? data : []);
     } catch (err) {
-      setError(err?.message || "Failed to load bookings");
+      toast.error(err?.message || "Failed to load bookings");
     } finally {
       setLoading(false);
     }
   }
 
-  async function handleCancel(bookingId) {
-    const confirmed = window.confirm(
-      "Are you sure you want to cancel?\n\nNo refund will be provided on cancellation."
-    );
-    if (!confirmed) return;
+  // ============================================
+  // CANCELLATION POLICY LOGIC
+  // ============================================
+  
+  // Check if booking can be cancelled (only allowed if more than 2 days before)
+  const canCancel = (booking) => {
+    const matchDateTime = new Date(`${booking.booking_date} ${booking.slot?.start_time}`);
+    const now = new Date();
+    const hoursDiff = (matchDateTime - now) / (1000 * 60 * 60);
+    return hoursDiff > 48 && booking.status === "confirmed";
+  };
+
+  // Get cancellation refund percentage based on time before match
+  const getRefundPercentage = (booking) => {
+    const matchDateTime = new Date(`${booking.booking_date} ${booking.slot?.start_time}`);
+    const now = new Date();
+    const hoursDiff = (matchDateTime - now) / (1000 * 60 * 60);
+    
+    if (hoursDiff > 72) {
+      return 100; // 4+ days before (more than 72 hours)
+    } else if (hoursDiff > 48) {
+      return 25; // 3 days before (49-72 hours)
+    } else {
+      return 0; // 2 days or less (≤ 48 hours)
+    }
+  };
+
+  // Get cancellation deadline text
+  const getCancellationDeadline = (booking) => {
+    const matchDateTime = new Date(`${booking.booking_date} ${booking.slot?.start_time}`);
+    const deadline2Days = new Date(matchDateTime.getTime() - 48 * 60 * 60 * 1000);
+    const deadline3Days = new Date(matchDateTime.getTime() - 72 * 60 * 60 * 1000);
+    
+    const now = new Date();
+    const hoursDiff = (matchDateTime - now) / (1000 * 60 * 60);
+    
+    if (hoursDiff > 72) {
+      return `Cancel before ${deadline3Days.toLocaleDateString()} for 100% refund, or before ${deadline2Days.toLocaleDateString()} for 25% refund`;
+    } else if (hoursDiff > 48) {
+      return `Cancel before ${deadline2Days.toLocaleDateString()} for 25% refund`;
+    } else {
+      return `No refund available for cancellations within 48 hours of match`;
+    }
+  };
+
+  async function handleCancelBooking() {
+    if (!bookingToCancel) return;
+    
     try {
-      setCancellingId(bookingId); setCancelError(""); setCancelSuccess("");
-      await api(`/bookings/${bookingId}/cancel`, { method: "PATCH" });
-      setCancelSuccess("Booking cancelled. No refund will be issued.");
+      setCancellingId(bookingToCancel.id);
+      toast.info("Cancelling booking...");
+      await api(`/bookings/${bookingToCancel.id}/cancel`, { method: "PATCH" });
+      toast.success("Booking cancelled successfully!");
       await loadBookings();
     } catch (err) {
-      setCancelError(err?.message || "Failed to cancel booking");
+      toast.error(err?.message || "Failed to cancel booking");
     } finally {
       setCancellingId(null);
+      setBookingToCancel(null);
+      setShowCancelDialog(false);
     }
   }
 
-  return (
-    <div className="min-h-screen bg-[#070812] text-white px-4 sm:px-6 py-6 sm:py-10">
-      <div className="mb-6 sm:mb-8 flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-3xl sm:text-4xl font-black text-pink-400">My Bookings</h1>
-        <Button onClick={() => navigate("/home")} className="bg-white/10 text-white hover:bg-white/15">
-          Back to Home
-        </Button>
-      </div>
+  // Share booking via WhatsApp
+  const shareBooking = (booking) => {
+    const message = `*Booking Confirmation - CrickOps*
 
-      {error && (
-        <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-red-300 text-sm flex items-center gap-2">
-          <XCircle className="h-4 w-4 shrink-0" />{error}
-        </div>
-      )}
-      {cancelSuccess && (
-        <div className="mb-4 rounded-xl border border-yellow-500/30 bg-yellow-500/10 px-4 py-3 text-yellow-300 text-sm flex items-center gap-2">
-          <AlertTriangle className="h-4 w-4 shrink-0" />{cancelSuccess}
-        </div>
-      )}
-      {cancelError && (
-        <div className="mb-4 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-red-300 text-sm flex items-center gap-2">
-          <XCircle className="h-4 w-4 shrink-0" />{cancelError}
-        </div>
-      )}
+Ground: ${booking.ground?.name}
+Location: ${booking.ground?.location}
+Date: ${booking.booking_date}
+Time: ${booking.slot?.start_time} - ${booking.slot?.end_time}
+Match Type: ${booking.match_type === "with_opponents" ? "With Opponents" : "Full Ground"}
+Price: Rs.${booking.total_price}
+Status: ${booking.status}
 
-      <div className="grid gap-5">
-        {loading ? (
-          Array.from({ length: 3 }).map((_, i) => <BookingCardSkeleton key={i} />)
-        ) : bookings.length === 0 ? (
-          <div className="rounded-2xl border border-white/10 bg-zinc-950/55 p-10 text-center">
-            <p className="text-white/50 text-lg">No bookings yet.</p>
-            <Button onClick={() => navigate("/grounds")}
-              className="mt-4 bg-gradient-to-r from-pink-500 to-violet-500">
-              Browse Grounds
-            </Button>
-          </div>
-        ) : (
-          bookings.map((booking) => (
-            <Card key={booking.id}
-              className="border-white/10 bg-zinc-950/55 shadow-[0_20px_60px_rgba(0,0,0,.55)] overflow-hidden">
-              <div className={`h-1 w-full ${
-                booking.status === "confirmed" ? "bg-gradient-to-r from-green-500 to-emerald-400" :
-                booking.status === "cancelled" ? "bg-gradient-to-r from-red-500 to-rose-400" :
-                "bg-gradient-to-r from-yellow-500 to-orange-400"
-              }`} />
+Thank you for booking with CrickOps!`;
 
-              <CardContent className="p-4 sm:p-6">
-                {/* Header */}
-                <div className="flex flex-wrap items-start justify-between gap-2 mb-4">
-                  <div className="flex-1 min-w-0">
-                    <h2 className="text-lg sm:text-2xl font-bold text-pink-400 leading-tight">
-                      {booking.ground?.name || "Ground"}
-                    </h2>
-                    <div className="flex items-center gap-1 text-white/60 text-xs sm:text-sm mt-1">
-                      <MapPin className="h-3 w-3 shrink-0" />
-                      <span className="truncate">{booking.ground?.location || "--"}</span>
-                    </div>
-                  </div>
-                  <span className={`shrink-0 px-2 sm:px-3 py-1 rounded-full text-xs sm:text-sm font-bold ${
-                    booking.status === "confirmed" ? "bg-green-500/20 text-green-300 border border-green-500/30" :
-                    booking.status === "cancelled" ? "bg-red-500/20 text-red-300 border border-red-500/30" :
-                    "bg-yellow-500/20 text-yellow-300 border border-yellow-500/30"
-                  }`}>{booking.status?.toUpperCase()}</span>
-                </div>
-
-                {/* Details grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 mb-4">
-                  <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2">
-                    <Calendar className="h-4 w-4 text-pink-400 shrink-0" />
-                    <div className="min-w-0">
-                      <p className="text-xs text-white/50">Date</p>
-                      <p className="text-sm font-semibold truncate">{booking.booking_date || "--"}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2">
-                    <Clock className="h-4 w-4 text-violet-400 shrink-0" />
-                    <div className="min-w-0">
-                      <p className="text-xs text-white/50">Slot</p>
-                      <p className="text-sm font-semibold truncate">
-                        {booking.slot?.start_time || "--"} - {booking.slot?.end_time || "--"}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/5 px-3 py-2">
-                    <CreditCard className="h-4 w-4 text-emerald-400 shrink-0" />
-                    <div>
-                      <p className="text-xs text-white/50">Total Price</p>
-                      <p className="text-sm font-semibold">₹{booking.total_price || "--"}</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mb-4 text-xs sm:text-sm text-white/60 space-y-1">
-                  <p>Match Type: <span className="text-white/80">{booking.match_type || "--"}</span></p>
-                  <p>Payment: <span className="text-white/80">{booking.payment_status || "--"}</span></p>
-                </div>
-
-                {/* Staff details — only on confirmed bookings with staff assigned */}
-                {booking.status === "confirmed" && (booking.umpire_name || booking.groundsman_name) && (
-                  <div className="mb-4 rounded-xl border border-violet-500/20 bg-violet-500/5 p-4 space-y-3">
-                    <p className="text-xs font-bold text-violet-300 uppercase tracking-wide">Match Day Staff</p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {booking.umpire_name && (
-                        <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-3 py-2">
-                          <User className="h-4 w-4 text-violet-400 shrink-0" />
-                          <div className="min-w-0">
-                            <p className="text-xs text-white/40">Umpire</p>
-                            <p className="text-sm font-semibold">{booking.umpire_name}</p>
-                            {booking.umpire_phone && (
-                              <a href={`tel:${booking.umpire_phone}`}
-                                className="text-xs text-emerald-400 flex items-center gap-1 hover:text-emerald-300 transition">
-                                <Phone className="h-3 w-3" />{booking.umpire_phone}
-                              </a>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                      {booking.groundsman_name && (
-                        <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/5 px-3 py-2">
-                          <User className="h-4 w-4 text-cyan-400 shrink-0" />
-                          <div className="min-w-0">
-                            <p className="text-xs text-white/40">Groundsman</p>
-                            <p className="text-sm font-semibold">{booking.groundsman_name}</p>
-                            {booking.groundsman_phone && (
-                              <a href={`tel:${booking.groundsman_phone}`}
-                                className="text-xs text-emerald-400 flex items-center gap-1 hover:text-emerald-300 transition">
-                                <Phone className="h-3 w-3" />{booking.groundsman_phone}
-                              </a>
-                            )}
-                          </div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Match day status — only confirmed */}
-                {booking.status === "confirmed" && (
-                  <div className="mb-4 rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-4">
-                    <p className="text-xs font-bold text-cyan-300 uppercase tracking-wide mb-3">
-                      Match Day Checklist
-                    </p>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                      {[
-                        { field: "umpire_reached", label: "Umpire Ready", icon: <User className="h-4 w-4" /> },
-                        { field: "water_arranged", label: "Water Ready", icon: <Droplets className="h-4 w-4" /> },
-                        { field: "balls_ready",    label: "Balls Ready", icon: <Circle className="h-4 w-4" /> },
-                        { field: "ground_ready",   label: "Ground Ready", icon: <CheckCircle className="h-4 w-4" /> },
-                      ].map(({ field, label, icon }) => (
-                        <div key={field}
-                          className={`flex flex-col items-center gap-1 rounded-xl border p-3 text-xs font-semibold ${
-                            booking[field]
-                              ? "bg-green-500/15 border-green-500/30 text-green-300"
-                              : "bg-white/5 border-white/10 text-white/30"
-                          }`}>
-                          <span className={booking[field] ? "text-green-400" : "text-white/20"}>
-                            {icon}
-                          </span>
-                          {label}
-                          <span className="text-[10px]">{booking[field] ? "Done" : "Pending"}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Timeline */}
-                <div className="mb-4">
-                  <p className="text-xs text-white/40 uppercase tracking-widest mb-3">Booking Timeline</p>
-                  <div className="flex items-center">
-                    <TimelineStep icon={<CheckCircle className="h-3 w-3 sm:h-4 sm:w-4" />} label="Created" active={true} color="pink" />
-                    <TimelineLine active={true} />
-                    <TimelineStep icon={<Clock className="h-3 w-3 sm:h-4 sm:w-4" />} label="Pending" active={["pending","confirmed","cancelled"].includes(booking.status)} color="yellow" />
-                    <TimelineLine active={["confirmed","cancelled"].includes(booking.status)} />
-                    {booking.status === "cancelled" ? (
-                      <TimelineStep icon={<XCircle className="h-3 w-3 sm:h-4 sm:w-4" />} label="Cancelled" active={true} color="red" />
-                    ) : (
-                      <TimelineStep icon={<CheckCircle className="h-3 w-3 sm:h-4 sm:w-4" />} label="Confirmed" active={booking.status === "confirmed"} color="green" />
-                    )}
-                  </div>
-                </div>
-
-                {/* Status messages */}
-                {booking.status === "pending" && (
-                  <div>
-                    <div className="mb-3 rounded-xl border border-yellow-500/20 bg-yellow-500/5 px-3 py-2 text-xs text-yellow-300 flex items-center gap-2">
-                      <AlertTriangle className="h-3 w-3 shrink-0" />
-                      Once confirmed by admin, cancellation is not allowed.
-                    </div>
-                    <Button onClick={() => handleCancel(booking.id)}
-                      disabled={cancellingId === booking.id}
-                      className="w-full sm:w-auto bg-red-500/20 border border-red-500/30 text-red-300 hover:bg-red-500/30 text-sm">
-                      {cancellingId === booking.id ? "Cancelling..." : "Cancel Booking"}
-                    </Button>
-                  </div>
-                )}
-
-                {booking.status === "confirmed" && (
-                  <div className="rounded-xl border border-green-500/20 bg-green-500/5 px-3 py-2 text-xs text-green-300 flex items-center gap-2">
-                    <CheckCircle className="h-3 w-3 shrink-0" />
-                    Booking confirmed. See you on the ground!
-                  </div>
-                )}
-
-                {booking.status === "cancelled" && (
-                  <div className="rounded-xl border border-red-500/20 bg-red-500/5 px-3 py-2 text-xs text-red-300 flex items-center gap-2">
-                    <XCircle className="h-3 w-3 shrink-0" />
-                    Booking cancelled. No refund issued.
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          ))
-        )}
-      </div>
-    </div>
-  );
-}
-
-function TimelineStep({ icon, label, active, color }) {
-  const colors = {
-    pink:   active ? "bg-pink-500 border-pink-500 text-white"   : "bg-white/5 border-white/10 text-white/30",
-    yellow: active ? "bg-yellow-500 border-yellow-500 text-black" : "bg-white/5 border-white/10 text-white/30",
-    green:  active ? "bg-green-500 border-green-500 text-white"  : "bg-white/5 border-white/10 text-white/30",
-    red:    active ? "bg-red-500 border-red-500 text-white"      : "bg-white/5 border-white/10 text-white/30",
+    if (navigator.share) {
+      navigator.share({
+        title: "Booking Confirmation",
+        text: message,
+        url: window.location.href
+      }).catch(() => {
+        const phone = booking.user?.phone || "";
+        if (phone) {
+          window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, "_blank");
+        } else {
+          toast.error("Share failed");
+        }
+      });
+    } else {
+      const phone = booking.user?.phone || "";
+      if (phone) {
+        window.open(`https://wa.me/${phone}?text=${encodeURIComponent(message)}`, "_blank");
+      } else {
+        navigator.clipboard.writeText(message);
+        toast.success("Booking details copied to clipboard!");
+      }
+    }
   };
-  return (
-    <div className="flex flex-col items-center gap-1">
-      <div className={`h-7 w-7 sm:h-8 sm:w-8 rounded-full border-2 flex items-center justify-center transition-all ${colors[color]}`}>
-        {icon}
+
+  // Download booking receipt
+  const downloadReceipt = (booking) => {
+    const receiptHTML = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Booking Receipt - CrickOps</title>
+        <style>
+          body { font-family: Arial, sans-serif; padding: 40px; background: #f5f5f5; }
+          .receipt { max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); overflow: hidden; }
+          .header { background: #ec489a; color: white; padding: 20px; text-align: center; }
+          .content { padding: 30px; }
+          .detail-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #eee; }
+          .total { font-size: 20px; font-weight: bold; margin-top: 20px; padding-top: 15px; border-top: 2px solid #ec489a; color: #ec489a; }
+          .footer { text-align: center; padding: 20px; background: #f9f9f9; color: #666; font-size: 12px; }
+          .cancellation-policy { background: #fff3e0; padding: 15px; margin-top: 20px; border-radius: 8px; font-size: 12px; }
+        </style>
+      </head>
+      <body>
+        <div class="receipt">
+          <div class="header">
+            <h2>CrickOps</h2>
+            <p>Booking Receipt</p>
+          </div>
+          <div class="content">
+            <p style="text-align: center; color: #666; margin-bottom: 20px;">Booking ID: ${booking.id}</p>
+            
+            <div class="detail-row">
+              <strong>Ground:</strong> <span>${booking.ground?.name}</span>
+            </div>
+            <div class="detail-row">
+              <strong>Location:</strong> <span>${booking.ground?.location}</span>
+            </div>
+            <div class="detail-row">
+              <strong>Date:</strong> <span>${booking.booking_date}</span>
+            </div>
+            <div class="detail-row">
+              <strong>Time:</strong> <span>${booking.slot?.start_time} - ${booking.slot?.end_time}</span>
+            </div>
+            <div class="detail-row">
+              <strong>Match Type:</strong> <span>${booking.match_type === "with_opponents" ? "With Opponents" : "Full Ground"}</span>
+            </div>
+            <div class="detail-row">
+              <strong>Price:</strong> <span>Rs. ${booking.total_price}</span>
+            </div>
+            <div class="detail-row">
+              <strong>Status:</strong> <span>${booking.status}</span>
+            </div>
+            
+            <div class="total">
+              Total Paid: Rs. ${booking.total_price}
+            </div>
+            
+            <div class="cancellation-policy">
+              <strong>Cancellation Policy:</strong><br/>
+              • Cancel more than 3 days before match: 100% refund<br/>
+              • Cancel between 2-3 days before match: 25% refund<br/>
+              • Cancel within 48 hours of match: No refund
+            </div>
+          </div>
+          <div class="footer">
+            <p>Thank you for choosing CrickOps!</p>
+            <p>For support: +91 9110546558 | support@crickops.com</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    const blob = new Blob([receiptHTML], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `booking_receipt_${booking.id}.html`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success("Receipt downloaded!");
+  };
+
+  // Filter bookings based on active tab
+  const filteredBookings = bookings.filter(booking => {
+    const matchDateTime = new Date(`${booking.booking_date} ${booking.slot?.start_time}`);
+    const now = new Date();
+    const isPast = matchDateTime < now;
+    
+    if (activeTab === "upcoming") {
+      return !isPast && booking.status === "confirmed";
+    } else if (activeTab === "past") {
+      return isPast && booking.status === "confirmed";
+    } else if (activeTab === "cancelled") {
+      return booking.status === "cancelled";
+    }
+    return true;
+  });
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#070812] text-white flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-pink-500" />
       </div>
-      <span className={`text-[10px] sm:text-xs whitespace-nowrap ${active ? "text-white/80" : "text-white/30"}`}>
-        {label}
-      </span>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-[#070812] text-white px-4 py-6 sm:px-6">
+      
+      {/* Header */}
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold text-pink-400">My Bookings</h1>
+        <p className="text-white/50 text-sm mt-1">
+          Manage your bookings and view history
+        </p>
+      </div>
+
+      {/* Cancellation Policy Info Banner */}
+      <Card className="bg-blue-500/10 border border-blue-500/30 mb-6">
+        <CardContent className="p-4">
+          <div className="flex items-start gap-3">
+            <Info className="h-5 w-5 text-blue-400 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-blue-300">Cancellation Policy</p>
+              <p className="text-xs text-white/60 mt-1">
+                • Cancel more than 3 days before match: 100% refund<br/>
+                • Cancel between 2-3 days before match: 25% refund<br/>
+                • Cancel within 48 hours of match: No refund
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
+        <TabsList className="bg-zinc-900 border border-white/10">
+          <TabsTrigger value="upcoming" className="data-[state=active]:bg-pink-500">
+            Upcoming
+          </TabsTrigger>
+          <TabsTrigger value="past" className="data-[state=active]:bg-pink-500">
+            Past
+          </TabsTrigger>
+          <TabsTrigger value="cancelled" className="data-[state=active]:bg-pink-500">
+            Cancelled
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="upcoming" className="mt-4">
+          {filteredBookings.length === 0 ? (
+            <div className="text-center py-12">
+              <Calendar className="h-12 w-12 mx-auto text-white/20 mb-3" />
+              <p className="text-white/50">No upcoming bookings</p>
+              <Button onClick={() => navigate("/grounds")} className="mt-4">
+                Book a Ground
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {filteredBookings.map((booking) => (
+                <BookingCard
+                  key={booking.id}
+                  booking={booking}
+                  canCancel={canCancel(booking)}
+                  refundPercentage={getRefundPercentage(booking)}
+                  cancellationDeadline={getCancellationDeadline(booking)}
+                  onCancel={() => {
+                    setBookingToCancel(booking);
+                    setShowCancelDialog(true);
+                  }}
+                  onShare={() => shareBooking(booking)}
+                  onDownload={() => downloadReceipt(booking)}
+                  cancelling={cancellingId === booking.id}
+                />
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="past" className="mt-4">
+          {filteredBookings.length === 0 ? (
+            <div className="text-center py-12">
+              <FileText className="h-12 w-12 mx-auto text-white/20 mb-3" />
+              <p className="text-white/50">No past bookings</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {filteredBookings.map((booking) => (
+                <BookingCard
+                  key={booking.id}
+                  booking={booking}
+                  isPast={true}
+                  onShare={() => shareBooking(booking)}
+                  onDownload={() => downloadReceipt(booking)}
+                />
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="cancelled" className="mt-4">
+          {filteredBookings.length === 0 ? (
+            <div className="text-center py-12">
+              <XCircle className="h-12 w-12 mx-auto text-white/20 mb-3" />
+              <p className="text-white/50">No cancelled bookings</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {filteredBookings.map((booking) => (
+                <BookingCard
+                  key={booking.id}
+                  booking={booking}
+                  isCancelled={true}
+                  onShare={() => shareBooking(booking)}
+                  onDownload={() => downloadReceipt(booking)}
+                />
+              ))}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
+
+      {/* Cancel Confirmation Dialog */}
+      <ConfirmDialog
+        open={showCancelDialog}
+        onOpenChange={setShowCancelDialog}
+        title="Cancel Booking"
+        description={
+          <div className="space-y-2">
+            <p>Are you sure you want to cancel this booking?</p>
+            {bookingToCancel && (
+              <div className={`p-3 rounded-lg ${
+                getRefundPercentage(bookingToCancel) === 100 ? "bg-green-500/10" :
+                getRefundPercentage(bookingToCancel) === 25 ? "bg-yellow-500/10" :
+                "bg-red-500/10"
+              }`}>
+                <p className={`text-sm ${
+                  getRefundPercentage(bookingToCancel) === 100 ? "text-green-400" :
+                  getRefundPercentage(bookingToCancel) === 25 ? "text-yellow-400" :
+                  "text-red-400"
+                }`}>
+                  Refund: {getRefundPercentage(bookingToCancel)}% of total amount
+                </p>
+                <p className="text-xs text-white/50 mt-1">
+                  {getCancellationDeadline(bookingToCancel)}
+                </p>
+              </div>
+            )}
+          </div>
+        }
+        onConfirm={handleCancelBooking}
+        confirmText="Yes, Cancel"
+        cancelText="No, Keep it"
+        variant="danger"
+      />
     </div>
   );
 }
 
-function TimelineLine({ active }) {
+// Booking Card Component
+function BookingCard({ booking, canCancel, refundPercentage, cancellationDeadline, onCancel, onShare, onDownload, cancelling, isPast, isCancelled }) {
+  const matchDateTime = new Date(`${booking.booking_date} ${booking.slot?.start_time}`);
+  const now = new Date();
+  const isUpcoming = matchDateTime > now && booking.status === "confirmed";
+  
+  // Get color based on refund percentage
+  const getRefundColor = () => {
+    if (refundPercentage === 100) return "bg-green-500/10 border-green-500/30 text-green-400";
+    if (refundPercentage === 25) return "bg-yellow-500/10 border-yellow-500/30 text-yellow-400";
+    return "bg-red-500/10 border-red-500/30 text-red-400";
+  };
+  
   return (
-    <div className={`h-0.5 flex-1 mx-1 mb-4 transition-all ${active ? "bg-white/40" : "bg-white/10"}`} />
+    <Card className="border-white/10 bg-zinc-950/55 overflow-hidden">
+      <div className={`h-1 w-full ${
+        booking.status === "confirmed" ? "bg-gradient-to-r from-green-500 to-emerald-400" :
+        booking.status === "cancelled" ? "bg-gradient-to-r from-red-500 to-rose-400" :
+        "bg-gradient-to-r from-yellow-500 to-orange-400"
+      }`} />
+      
+      <CardContent className="p-5">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="flex-1">
+            <h3 className="text-lg font-bold text-pink-400">{booking.ground?.name}</h3>
+            <div className="flex items-center gap-2 text-white/50 text-sm mt-1">
+              <MapPin className="h-3 w-3" />
+              <span>{booking.ground?.location}</span>
+            </div>
+          </div>
+          <Badge className={`text-xs ${
+            booking.status === "confirmed" ? "bg-green-500/20 text-green-400" :
+            booking.status === "cancelled" ? "bg-red-500/20 text-red-400" :
+            "bg-yellow-500/20 text-yellow-400"
+          }`}>
+            {booking.status}
+          </Badge>
+        </div>
+
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4 text-sm">
+          <div className="flex items-center gap-2">
+            <Calendar className="h-4 w-4 text-pink-400" />
+            <span>{booking.booking_date}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Clock className="h-4 w-4 text-violet-400" />
+            <span>{booking.slot?.start_time} - {booking.slot?.end_time}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <DollarSign className="h-4 w-4 text-emerald-400" />
+            <span>Rs. {booking.total_price}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <User className="h-4 w-4 text-cyan-400" />
+            <span>{booking.match_type === "with_opponents" ? "With Opponents" : "Full Ground"}</span>
+          </div>
+        </div>
+
+        {/* Cancellation Policy Info */}
+        {isUpcoming && !isCancelled && (
+          <div className={`mt-3 p-2 rounded-lg border ${getRefundColor()}`}>
+            <div className="flex items-start gap-2">
+              <AlertCircle className={`h-4 w-4 mt-0.5 ${
+                refundPercentage === 100 ? "text-green-400" :
+                refundPercentage === 25 ? "text-yellow-400" :
+                "text-red-400"
+              }`} />
+              <div>
+                <p className="text-xs font-medium">
+                  {refundPercentage === 100 && "100% refund available"}
+                  {refundPercentage === 25 && "25% refund available"}
+                  {refundPercentage === 0 && "No refund available"}
+                </p>
+                <p className="text-xs text-white/40 mt-0.5">
+                  {cancellationDeadline}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Action Buttons */}
+        <div className="flex flex-wrap gap-2 mt-4">
+          {isUpcoming && !isCancelled && canCancel && (
+            <Button
+              onClick={onCancel}
+              disabled={cancelling}
+              size="sm"
+              className="bg-red-500/20 text-red-300 hover:bg-red-500/30"
+            >
+              <XCircle className="h-4 w-4 mr-1" />
+              {cancelling ? "Cancelling..." : "Cancel Booking"}
+            </Button>
+          )}
+          
+          <Button
+            onClick={onShare}
+            size="sm"
+            variant="outline"
+            className="border-white/10 text-white/70 hover:text-white"
+          >
+            <Share2 className="h-4 w-4 mr-1" />
+            Share
+          </Button>
+          
+          <Button
+            onClick={onDownload}
+            size="sm"
+            variant="outline"
+            className="border-white/10 text-white/70 hover:text-white"
+          >
+            <Download className="h-4 w-4 mr-1" />
+            Receipt
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
