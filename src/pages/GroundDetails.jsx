@@ -3,11 +3,12 @@ import { useParams, useNavigate } from "react-router-dom";
 import { api } from "../lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Calendar } from "@/components/ui/calendar";
+import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { 
   MapPin, Clock, Shield, User, Phone, Loader2, 
-  Calendar as CalendarIcon, CheckCircle, XCircle, Users, DollarSign
+  Calendar as CalendarIcon, CheckCircle, XCircle, Users, DollarSign,
+  ChevronLeft, ChevronRight, Star
 } from "lucide-react";
 import { toast } from "sonner";
 import { useRetry } from "../hooks/useRetry";
@@ -19,7 +20,7 @@ export default function GroundDetails() {
   const [ground, setGround] = useState(null);
   const [user, setUser] = useState(null);
   const [slots, setSlots] = useState([]);
-  const [selectedDate, setSelectedDate] = useState(null);
+  const [selectedDate, setSelectedDate] = useState("");
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [matchType, setMatchType] = useState("with_opponents");
   const [loadingSlots, setLoadingSlots] = useState(false);
@@ -29,6 +30,8 @@ export default function GroundDetails() {
   const [slotError, setSlotError] = useState("");
   const [availableDates, setAvailableDates] = useState([]);
   const [bookedDates, setBookedDates] = useState([]);
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [hoveredDate, setHoveredDate] = useState(null);
 
   const { withRetry, retrying, retryCount } = useRetry(3, 1000);
 
@@ -40,8 +43,7 @@ export default function GroundDetails() {
 
   useEffect(() => {
     if (selectedDate) {
-      const dateStr = selectedDate.toISOString().split('T')[0];
-      loadSlotsByDate(dateStr);
+      loadSlotsByDate(selectedDate);
     }
   }, [selectedDate]);
 
@@ -245,14 +247,56 @@ Message: I have created a booking request. Please confirm availability.
     }
   }
 
-  // Function to check if a date is disabled (past dates or fully booked)
-  const isDateDisabled = (date) => {
-    const dateStr = date.toISOString().split('T')[0];
-    // Disable past dates
-    if (date < new Date().setHours(0, 0, 0, 0)) return true;
-    // Disable dates with no slots at all (not in available or booked)
-    const hasSlots = availableDates.includes(dateStr) || bookedDates.includes(dateStr);
-    return !hasSlots;
+  // Get date status
+  function getDateStatus(dateStr) {
+    if (availableDates.includes(dateStr)) return "available";
+    if (bookedDates.includes(dateStr)) return "booked";
+    return null;
+  }
+
+  // Generate calendar for current month
+  const getCalendarDays = () => {
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const startDayOfWeek = firstDay.getDay();
+    const daysInMonth = lastDay.getDate();
+    
+    const days = [];
+    // Add previous month days
+    for (let i = startDayOfWeek - 1; i >= 0; i--) {
+      const date = new Date(year, month, -i);
+      days.push({ date, isCurrentMonth: false });
+    }
+    // Add current month days
+    for (let i = 1; i <= daysInMonth; i++) {
+      const date = new Date(year, month, i);
+      days.push({ date, isCurrentMonth: true });
+    }
+    // Add next month days to make 42 cells (6 rows)
+    const remaining = 42 - days.length;
+    for (let i = 1; i <= remaining; i++) {
+      const date = new Date(year, month + 1, i);
+      days.push({ date, isCurrentMonth: false });
+    }
+    return days;
+  };
+
+  const calendarDays = getCalendarDays();
+  const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+  const goToPreviousMonth = () => {
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
+  };
+
+  const goToNextMonth = () => {
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
+  };
+
+  const isToday = (date) => {
+    const today = new Date();
+    return date.toDateString() === today.toDateString();
   };
 
   if (!ground) {
@@ -285,93 +329,166 @@ Message: I have created a booking request. Please confirm availability.
         <div className="lg:col-span-2 space-y-6">
           
           {/* Ground Info Card */}
-          <Card className="bg-zinc-900 border border-white/10">
-            <CardContent className="p-4 sm:p-6">
+          <Card className="bg-zinc-900 border border-white/10 overflow-hidden">
+            <CardContent className="p-0">
               <img
                 src={ground.image_url}
                 alt={ground.name}
-                className="w-full h-48 sm:h-64 lg:h-80 object-cover rounded-xl mb-4"
+                className="w-full h-48 sm:h-56 object-cover"
                 onError={(e) => {
                   e.target.src = "https://images.unsplash.com/photo-1531415074968-036ba1b575da?w=600";
                 }}
               />
-              <h1 className="text-2xl sm:text-3xl font-bold mb-3">{ground.name}</h1>
-              <div className="grid sm:grid-cols-2 gap-2 text-sm text-white/70">
-                <div className="flex items-center gap-2">
-                  <MapPin className="h-4 w-4 text-pink-400 shrink-0" />
-                  <span>{ground.location}</span>
+              <div className="p-4 sm:p-6">
+                <h1 className="text-2xl sm:text-3xl font-bold mb-2">{ground.name}</h1>
+                <div className="flex flex-wrap gap-3 text-sm text-white/70 mb-4">
+                  <div className="flex items-center gap-1">
+                    <MapPin className="h-4 w-4 text-pink-400" />
+                    <span>{ground.location}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Clock className="h-4 w-4 text-violet-400" />
+                    <span>{ground.opening_time} - {ground.closing_time}</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-violet-400 shrink-0" />
-                  <span>{ground.opening_time} - {ground.closing_time}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Shield className="h-4 w-4 text-cyan-400 shrink-0" />
-                  <span>{ground.amenities || "Not listed"}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <User className="h-4 w-4 text-emerald-400 shrink-0" />
-                  <span>{ground.admin_name || "Not set"}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Phone className="h-4 w-4 text-yellow-400 shrink-0" />
-                  <span>{ground.admin_phone || "Not set"}</span>
+                <div className="flex flex-wrap gap-2">
+                  <Badge className="bg-white/10 text-white/70">{ground.sport_type}</Badge>
+                  {ground.amenities?.split(',').slice(0, 3).map((item, i) => (
+                    <Badge key={i} className="bg-white/10 text-white/70">{item.trim()}</Badge>
+                  ))}
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          {/* Calendar */}
+          {/* Premium Calendar */}
           <Card className="bg-zinc-900 border border-white/10">
             <CardContent className="p-4 sm:p-6">
-              <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-                <CalendarIcon className="h-5 w-5 text-pink-400" />
-                Select Match Date
-              </h2>
-              <Calendar
-                mode="single"
-                selected={selectedDate}
-                onSelect={setSelectedDate}
-                className="rounded-md border-white/10 bg-zinc-800 text-white"
-                disabled={isDateDisabled}
-                modifiers={{
-                  available: availableDates.map(d => new Date(d)),
-                  booked: bookedDates.map(d => new Date(d))
-                }}
-                modifiersStyles={{
-                  available: { 
-                    backgroundColor: "rgba(34,197,94,0.2)", 
-                    color: "white", 
-                    fontWeight: "bold",
-                    borderRadius: "8px"
-                  },
-                  booked: { 
-                    backgroundColor: "rgba(239,68,68,0.2)", 
-                    textDecoration: "line-through", 
-                    color: "rgb(156,163,175)",
-                    borderRadius: "8px"
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-bold flex items-center gap-2">
+                  <CalendarIcon className="h-5 w-5 text-pink-400" />
+                  Select Match Date
+                </h2>
+                <div className="flex gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={goToPreviousMonth}
+                    className="h-8 w-8 text-white/60 hover:text-white"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <span className="text-sm font-medium px-3 py-1.5">
+                    {currentMonth.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={goToNextMonth}
+                    className="h-8 w-8 text-white/60 hover:text-white"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+
+              {/* Weekday Headers */}
+              <div className="grid grid-cols-7 gap-1 mb-2">
+                {weekDays.map((day) => (
+                  <div key={day} className="text-center text-xs font-medium text-white/50 py-2">
+                    {day}
+                  </div>
+                ))}
+              </div>
+
+              {/* Calendar Days */}
+              <div className="grid grid-cols-7 gap-1">
+                {calendarDays.map(({ date, isCurrentMonth }, index) => {
+                  const dateStr = date.toISOString().split('T')[0];
+                  const status = getDateStatus(dateStr);
+                  const isSelected = selectedDate === dateStr;
+                  const isTodayDate = isToday(date);
+                  const isPast = date < new Date().setHours(0, 0, 0, 0);
+                  const isHovered = hoveredDate === dateStr;
+                  const isDisabled = isPast || status === "booked" || (!status && !isCurrentMonth);
+
+                  let bgColor = "bg-transparent";
+                  let textColor = "text-white/70";
+                  let borderClass = "border-transparent";
+
+                  if (isSelected) {
+                    bgColor = "bg-pink-500";
+                    textColor = "text-white";
+                    borderClass = "border-pink-400";
+                  } else if (status === "available" && isCurrentMonth && !isPast) {
+                    bgColor = "bg-green-500/20";
+                    textColor = "text-green-400";
+                    borderClass = "border-green-500/30";
+                  } else if (status === "booked") {
+                    bgColor = "bg-red-500/10";
+                    textColor = "text-red-400/50 line-through";
+                  } else if (!isCurrentMonth) {
+                    textColor = "text-white/20";
                   }
-                }}
-              />
-              <div className="flex gap-4 mt-4 text-xs">
+
+                  if (isHovered && !isSelected && status === "available") {
+                    bgColor = "bg-green-500/30";
+                  }
+
+                  return (
+                    <button
+                      key={index}
+                      onClick={() => !isDisabled && setSelectedDate(dateStr)}
+                      onMouseEnter={() => setHoveredDate(dateStr)}
+                      onMouseLeave={() => setHoveredDate(null)}
+                      disabled={isDisabled}
+                      className={`
+                        relative aspect-square rounded-lg transition-all duration-200
+                        ${bgColor} ${textColor} ${borderClass}
+                        ${!isDisabled && isCurrentMonth && !isPast && status !== "booked" ? "cursor-pointer hover:scale-105" : "cursor-not-allowed"}
+                        ${isTodayDate && !isSelected ? "ring-1 ring-pink-500/50" : ""}
+                      `}
+                    >
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <span className={`text-sm font-medium ${isSelected ? "font-bold" : ""}`}>
+                          {date.getDate()}
+                        </span>
+                      </div>
+                      {status === "available" && !isSelected && (
+                        <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 rounded-full bg-green-500" />
+                      )}
+                      {status === "booked" && (
+                        <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 rounded-full bg-red-500" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Legend */}
+              <div className="flex flex-wrap gap-4 mt-6 pt-4 border-t border-white/10">
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-green-500" />
-                  <span className="text-white/60">Available</span>
+                  <span className="text-xs text-white/60">Available</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-red-500" />
-                  <span className="text-white/60">Booked</span>
+                  <span className="text-xs text-white/60">Fully Booked</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 rounded-full bg-gray-500" />
-                  <span className="text-white/60">No Slots</span>
+                  <div className="w-3 h-3 rounded-full bg-pink-500" />
+                  <span className="text-xs text-white/60">Selected</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-white/20" />
+                  <span className="text-xs text-white/60">No Slots</span>
                 </div>
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Right Column - Price Summary Card (Sticky) */}
+        {/* Right Column - Price Summary Card */}
         <div className="lg:col-span-1">
           <div className="sticky top-24">
             <Card className="bg-gradient-to-br from-zinc-900 to-zinc-950 border border-pink-500/30">
@@ -427,7 +544,7 @@ Message: I have created a booking request. Please confirm availability.
                     <Button
                       onClick={handleBooking}
                       disabled={bookingLoading}
-                      className="w-full bg-gradient-to-r from-pink-500 to-violet-500 hover:opacity-90 transition"
+                      className="w-full bg-gradient-to-r from-pink-500 to-violet-500 hover:opacity-90 transition py-6 text-base"
                     >
                       {bookingLoading ? (
                         <div className="flex items-center gap-2">
@@ -470,7 +587,10 @@ Message: I have created a booking request. Please confirm availability.
             <span className="ml-2 text-white/70">Loading slots...</span>
           </div>
         ) : slots.length === 0 ? (
-          <p className="text-white/70 text-sm">No slots available for this date.</p>
+          <div className="text-center py-12 bg-zinc-900/50 rounded-xl border border-white/10">
+            <CalendarIcon className="h-12 w-12 mx-auto text-white/20 mb-3" />
+            <p className="text-white/50">No slots available for this date</p>
+          </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {slots.map((slot) => {
@@ -492,25 +612,45 @@ Message: I have created a booking request. Please confirm availability.
               return (
                 <Card
                   key={slot.id}
-                  className={`cursor-pointer border bg-zinc-900 transition ${
-                    isSelected ? "border-pink-500 ring-2 ring-pink-500/50" : "border-white/10"
-                  } ${isDisabled ? "opacity-60 cursor-not-allowed" : "hover:border-pink-400"}`}
+                  className={`cursor-pointer border transition-all duration-200 ${
+                    isSelected 
+                      ? "border-pink-500 ring-2 ring-pink-500/50 bg-pink-500/5" 
+                      : "border-white/10 bg-zinc-900 hover:border-pink-400"
+                  } ${isDisabled ? "opacity-60 cursor-not-allowed" : ""}`}
                   onClick={() => !isDisabled && handleSelectSlot(slot)}
                 >
-                  <CardContent className="p-4 sm:p-6">
-                    <h3 className="text-lg sm:text-xl font-bold mb-2">
-                      {slot.start_time} - {slot.end_time}
-                    </h3>
-                    <p className="text-white/70 text-sm">Date: {slot.slot_date}</p>
-                    <p className="text-pink-400 font-semibold mt-1">Rs. {slot.price} per team</p>
-                    <p className="text-white/70 mt-1 text-sm">
-                      Teams: {slot.teams_booked_count || 0} / {slot.max_teams || 2}
-                    </p>
-                    <p className={`mt-1 font-medium text-sm ${
-                      isDisabled ? "text-red-400" : "text-green-400"
-                    }`}>
-                      {statusText}
-                    </p>
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <h3 className="text-lg font-bold">
+                          {slot.start_time} - {slot.end_time}
+                        </h3>
+                        <p className="text-white/50 text-xs mt-1">
+                          {slot.slot_date}
+                        </p>
+                      </div>
+                      {isSelected && (
+                        <CheckCircle className="h-5 w-5 text-pink-500" />
+                      )}
+                    </div>
+                    <div className="mt-3 space-y-1">
+                      <p className="text-pink-400 font-semibold">
+                        Rs. {slot.price} <span className="text-white/50 text-xs">per team</span>
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <Users className="h-3 w-3 text-white/40" />
+                        <p className="text-xs text-white/50">
+                          Teams: {slot.teams_booked_count || 0} / {slot.max_teams || 2}
+                        </p>
+                      </div>
+                      <Badge className={`mt-2 text-xs ${
+                        statusText === "Available" ? "bg-green-500/20 text-green-400 border-green-500/30" :
+                        statusText === "Booked" ? "bg-red-500/20 text-red-400 border-red-500/30" :
+                        "bg-yellow-500/20 text-yellow-400 border-yellow-500/30"
+                      }`}>
+                        {statusText}
+                      </Badge>
+                    </div>
                   </CardContent>
                 </Card>
               );
@@ -523,7 +663,7 @@ Message: I have created a booking request. Please confirm availability.
       <div className="mt-8">
         <h2 className="text-xl sm:text-2xl font-bold mb-3">Match Type</h2>
         <div className="space-y-3 mb-8">
-          <label className="flex items-center gap-3 cursor-pointer text-sm sm:text-base">
+          <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition">
             <input
               type="radio"
               name="match"
@@ -532,9 +672,12 @@ Message: I have created a booking request. Please confirm availability.
               onChange={(e) => setMatchType(e.target.value)}
               className="h-4 w-4 accent-pink-500"
             />
-            Ground Needed With Opponents
+            <div>
+              <span className="font-medium">Ground Needed With Opponents</span>
+              <p className="text-xs text-white/40">You need opponents to play. We'll help you find a team.</p>
+            </div>
           </label>
-          <label className="flex items-center gap-3 cursor-pointer text-sm sm:text-base">
+          <label className="flex items-center gap-3 cursor-pointer p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition">
             <input
               type="radio"
               name="match"
@@ -543,7 +686,10 @@ Message: I have created a booking request. Please confirm availability.
               onChange={(e) => setMatchType(e.target.value)}
               className="h-4 w-4 accent-pink-500"
             />
-            Ground Needed Without Opponents
+            <div>
+              <span className="font-medium">Ground Needed Without Opponents</span>
+              <p className="text-xs text-white/40">You have your own team. Full ground booking (2x price).</p>
+            </div>
           </label>
         </div>
       </div>
