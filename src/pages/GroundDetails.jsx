@@ -30,7 +30,7 @@ export default function GroundDetails() {
   const [slotError, setSlotError] = useState("");
   const [availableDates, setAvailableDates] = useState([]);
   const [bookedDates, setBookedDates] = useState([]);
-  const [calendarView, setCalendarView] = useState("compact"); // "compact" or "full"
+  const [calendarView, setCalendarView] = useState("compact");
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
   const { withRetry, retrying, retryCount } = useRetry(3, 1000);
@@ -283,34 +283,37 @@ Message: I have created a booking request. Please confirm availability.
     return dateStr === today;
   };
 
-  // Full Calendar Helpers
-  const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
+  // ============================================
+  // FIXED CALENDAR FUNCTIONS - ONLY CURRENT MONTH
+  // ============================================
+  
   const getCalendarDays = () => {
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth();
     const firstDay = new Date(year, month, 1);
-    const lastDay = new Date(year, month + 1, 0);
     const startDayOfWeek = firstDay.getDay();
-    const daysInMonth = lastDay.getDate();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
     
     const days = [];
-    // Add previous month days
-    for (let i = startDayOfWeek - 1; i >= 0; i--) {
-      const date = new Date(year, month, -i);
-      days.push({ date, isCurrentMonth: false });
+    
+    // Add empty cells for days before month starts
+    for (let i = 0; i < startDayOfWeek; i++) {
+      days.push({ date: null, isCurrentMonth: false, isEmpty: true });
     }
+    
     // Add current month days
     for (let i = 1; i <= daysInMonth; i++) {
       const date = new Date(year, month, i);
-      days.push({ date, isCurrentMonth: true });
+      days.push({ date, isCurrentMonth: true, isEmpty: false });
     }
-    // Add next month days to make 42 cells
-    const remaining = 42 - days.length;
-    for (let i = 1; i <= remaining; i++) {
-      const date = new Date(year, month + 1, i);
-      days.push({ date, isCurrentMonth: false });
+    
+    // Fill remaining cells with empty (not next month)
+    const totalCells = 42;
+    const remainingCells = totalCells - days.length;
+    for (let i = 0; i < remainingCells; i++) {
+      days.push({ date: null, isCurrentMonth: false, isEmpty: true });
     }
+    
     return days;
   };
 
@@ -482,7 +485,7 @@ Message: I have created a booking request. Please confirm availability.
               </>
             )}
 
-            {/* FULL CALENDAR VIEW - Month Grid */}
+            {/* FULL CALENDAR VIEW - Month Grid (Fixed - Only Current Month) */}
             {calendarView === "full" && (
               <>
                 {/* Month Navigation */}
@@ -510,38 +513,40 @@ Message: I have created a booking request. Please confirm availability.
 
                 {/* Weekday Headers */}
                 <div className="grid grid-cols-7 gap-1 mb-2">
-                  {weekDays.map((day) => (
+                  {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
                     <div key={day} className="text-center text-xs font-medium text-white/50 py-1">
                       {day}
                     </div>
                   ))}
                 </div>
 
-                {/* Calendar Days */}
+                {/* Calendar Days - Only Current Month */}
                 <div className="grid grid-cols-7 gap-1">
-                  {calendarDays.map(({ date, isCurrentMonth }, index) => {
-                    const dateStr = date.toISOString().split('T')[0];
+                  {calendarDays.map((day, index) => {
+                    if (day.isEmpty || !day.date) {
+                      // Empty cell - not clickable
+                      return <div key={index} className="aspect-square rounded-lg bg-transparent" />;
+                    }
+                    
+                    const dateStr = day.date.toISOString().split('T')[0];
                     const status = getDateStatus(dateStr);
                     const isSelected = selectedDate === dateStr;
-                    const isPast = date < new Date().setHours(0, 0, 0, 0);
+                    const isPast = day.date < new Date().setHours(0, 0, 0, 0);
                     const isTodayDate = isToday(dateStr);
-                    const isDisabled = isPast || status === "booked" || (!status && !isCurrentMonth);
+                    const isDisabled = isPast || status === "booked";
 
                     let bgColor = "bg-transparent";
                     let textColor = "text-white/70";
-                    let borderClass = "border-transparent";
 
                     if (isSelected) {
                       bgColor = "bg-pink-500";
                       textColor = "text-white";
-                    } else if (status === "available" && isCurrentMonth && !isPast) {
+                    } else if (status === "available" && !isPast) {
                       bgColor = "bg-green-500/20";
                       textColor = "text-green-400";
                     } else if (status === "booked") {
                       bgColor = "bg-red-500/10";
                       textColor = "text-red-400/50";
-                    } else if (!isCurrentMonth) {
-                      textColor = "text-white/20";
                     }
 
                     return (
@@ -558,10 +563,10 @@ Message: I have created a booking request. Please confirm availability.
                       >
                         <div className="absolute inset-0 flex items-center justify-center">
                           <span className={`text-sm font-medium ${isSelected ? "font-bold" : ""}`}>
-                            {date.getDate()}
+                            {day.date.getDate()}
                           </span>
                         </div>
-                        {status === "available" && !isSelected && (
+                        {status === "available" && !isSelected && !isPast && (
                           <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 rounded-full bg-green-500" />
                         )}
                         {status === "booked" && (
