@@ -4,7 +4,6 @@ import { api } from "../lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
-import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { 
   MapPin, Clock, Shield, User, Phone, Loader2, 
@@ -20,7 +19,7 @@ export default function GroundDetails() {
   const [ground, setGround] = useState(null);
   const [user, setUser] = useState(null);
   const [slots, setSlots] = useState([]);
-  const [selectedDate, setSelectedDate] = useState("");
+  const [selectedDate, setSelectedDate] = useState(null);
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [matchType, setMatchType] = useState("with_opponents");
   const [loadingSlots, setLoadingSlots] = useState(false);
@@ -41,7 +40,8 @@ export default function GroundDetails() {
 
   useEffect(() => {
     if (selectedDate) {
-      loadSlotsByDate(selectedDate);
+      const dateStr = selectedDate.toISOString().split('T')[0];
+      loadSlotsByDate(dateStr);
     }
   }, [selectedDate]);
 
@@ -133,7 +133,6 @@ export default function GroundDetails() {
     const adminNumber = ground.admin_phone;
     
     if (!adminNumber) {
-      console.log("No admin phone number found");
       toast.warning("Admin contact not available. Your booking is saved but admin will need to contact you.");
       return;
     }
@@ -246,28 +245,14 @@ Message: I have created a booking request. Please confirm availability.
     }
   }
 
-  // Custom day render for calendar
-  const renderDay = (day) => {
-    const dateStr = day.toISOString().split('T')[0];
-    let status = "";
-    let statusColor = "";
-    
-    if (availableDates.includes(dateStr)) {
-      status = "available";
-      statusColor = "bg-green-500/20 text-green-400";
-    } else if (bookedDates.includes(dateStr)) {
-      status = "booked";
-      statusColor = "bg-red-500/20 text-red-400";
-    }
-    
-    return (
-      <div className="relative">
-        <span>{day.getDate()}</span>
-        {status && (
-          <div className={`absolute -bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 rounded-full ${statusColor === "bg-green-500/20" ? "bg-green-500" : "bg-red-500"}`} />
-        )}
-      </div>
-    );
+  // Function to check if a date is disabled (past dates or fully booked)
+  const isDateDisabled = (date) => {
+    const dateStr = date.toISOString().split('T')[0];
+    // Disable past dates
+    if (date < new Date().setHours(0, 0, 0, 0)) return true;
+    // Disable dates with no slots at all (not in available or booked)
+    const hasSlots = availableDates.includes(dateStr) || bookedDates.includes(dateStr);
+    return !hasSlots;
   };
 
   if (!ground) {
@@ -345,18 +330,28 @@ Message: I have created a booking request. Please confirm availability.
               </h2>
               <Calendar
                 mode="single"
-                selected={selectedDate ? new Date(selectedDate) : undefined}
-                onSelect={(date) => setSelectedDate(date ? date.toISOString().split('T')[0] : "")}
-                className="rounded-md border-white/10 bg-zinc-800"
+                selected={selectedDate}
+                onSelect={setSelectedDate}
+                className="rounded-md border-white/10 bg-zinc-800 text-white"
+                disabled={isDateDisabled}
                 modifiers={{
                   available: availableDates.map(d => new Date(d)),
                   booked: bookedDates.map(d => new Date(d))
                 }}
                 modifiersStyles={{
-                  available: { backgroundColor: "rgba(34,197,94,0.1)", color: "white", fontWeight: "bold" },
-                  booked: { backgroundColor: "rgba(239,68,68,0.1)", textDecoration: "line-through", color: "rgb(156,163,175)" }
+                  available: { 
+                    backgroundColor: "rgba(34,197,94,0.2)", 
+                    color: "white", 
+                    fontWeight: "bold",
+                    borderRadius: "8px"
+                  },
+                  booked: { 
+                    backgroundColor: "rgba(239,68,68,0.2)", 
+                    textDecoration: "line-through", 
+                    color: "rgb(156,163,175)",
+                    borderRadius: "8px"
+                  }
                 }}
-                disabled={(date) => date < new Date() || bookedDates.includes(date.toISOString().split('T')[0])}
               />
               <div className="flex gap-4 mt-4 text-xs">
                 <div className="flex items-center gap-2">
@@ -369,7 +364,7 @@ Message: I have created a booking request. Please confirm availability.
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="w-3 h-3 rounded-full bg-gray-500" />
-                  <span className="text-white/60">Disabled</span>
+                  <span className="text-white/60">No Slots</span>
                 </div>
               </div>
             </CardContent>
