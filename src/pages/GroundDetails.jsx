@@ -8,7 +8,7 @@ import { Separator } from "@/components/ui/separator";
 import { 
   MapPin, Clock, Shield, User, Phone, Loader2, 
   Calendar as CalendarIcon, CheckCircle, XCircle, Users, DollarSign,
-  ChevronLeft, ChevronRight, Star, ChevronDown
+  ChevronLeft, ChevronRight, Star, ChevronDown, LayoutGrid, List
 } from "lucide-react";
 import { toast } from "sonner";
 import { useRetry } from "../hooks/useRetry";
@@ -30,7 +30,8 @@ export default function GroundDetails() {
   const [slotError, setSlotError] = useState("");
   const [availableDates, setAvailableDates] = useState([]);
   const [bookedDates, setBookedDates] = useState([]);
-  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [calendarView, setCalendarView] = useState("compact"); // "compact" or "full"
+  const [currentMonth, setCurrentMonth] = useState(new Date());
 
   const { withRetry, retrying, retryCount } = useRetry(3, 1000);
 
@@ -43,7 +44,6 @@ export default function GroundDetails() {
   useEffect(() => {
     if (selectedDate) {
       loadSlotsByDate(selectedDate);
-      setShowDatePicker(false);
     }
   }, [selectedDate]);
 
@@ -254,10 +254,10 @@ Message: I have created a booking request. Please confirm availability.
     return null;
   }
 
-  // Generate next 14 days
+  // Generate next 30 days for compact view
   const getNextDates = () => {
     const dates = [];
-    for (let i = 0; i < 14; i++) {
+    for (let i = 0; i < 30; i++) {
       const date = new Date();
       date.setDate(date.getDate() + i);
       dates.push(date.toISOString().split('T')[0]);
@@ -281,6 +281,47 @@ Message: I have created a booking request. Please confirm availability.
   const isToday = (dateStr) => {
     const today = new Date().toISOString().split('T')[0];
     return dateStr === today;
+  };
+
+  // Full Calendar Helpers
+  const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+  const getCalendarDays = () => {
+    const year = currentMonth.getFullYear();
+    const month = currentMonth.getMonth();
+    const firstDay = new Date(year, month, 1);
+    const lastDay = new Date(year, month + 1, 0);
+    const startDayOfWeek = firstDay.getDay();
+    const daysInMonth = lastDay.getDate();
+    
+    const days = [];
+    // Add previous month days
+    for (let i = startDayOfWeek - 1; i >= 0; i--) {
+      const date = new Date(year, month, -i);
+      days.push({ date, isCurrentMonth: false });
+    }
+    // Add current month days
+    for (let i = 1; i <= daysInMonth; i++) {
+      const date = new Date(year, month, i);
+      days.push({ date, isCurrentMonth: true });
+    }
+    // Add next month days to make 42 cells
+    const remaining = 42 - days.length;
+    for (let i = 1; i <= remaining; i++) {
+      const date = new Date(year, month + 1, i);
+      days.push({ date, isCurrentMonth: false });
+    }
+    return days;
+  };
+
+  const calendarDays = getCalendarDays();
+
+  const goToPreviousMonth = () => {
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1, 1));
+  };
+
+  const goToNextMonth = () => {
+    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1));
   };
 
   if (!ground) {
@@ -346,7 +387,7 @@ Message: I have created a booking request. Please confirm availability.
           </CardContent>
         </Card>
 
-        {/* Date Selection - Horizontal Scroll */}
+        {/* Date Selection with View Toggle */}
         <Card className="bg-zinc-900 border border-white/10">
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-3">
@@ -354,78 +395,187 @@ Message: I have created a booking request. Please confirm availability.
                 <CalendarIcon className="h-4 w-4 text-pink-400" />
                 Select Date
               </h2>
-              {selectedDate && (
+              <div className="flex gap-1">
                 <Button
-                  variant="ghost"
+                  variant={calendarView === "compact" ? "default" : "ghost"}
                   size="sm"
-                  onClick={() => setSelectedDate("")}
-                  className="h-7 text-xs text-white/50 hover:text-white"
+                  onClick={() => setCalendarView("compact")}
+                  className={`h-8 px-2 ${calendarView === "compact" ? "bg-pink-500 text-white" : "text-white/50"}`}
                 >
-                  Clear
+                  <List className="h-3.5 w-3.5 mr-1" />
+                  Compact
                 </Button>
-              )}
-            </div>
-            
-            {/* Horizontal Scroll Date Picker */}
-            <div className="overflow-x-auto pb-2 -mx-1 px-1">
-              <div className="flex gap-2 min-w-max">
-                {nextDates.map((date) => {
-                  const status = getDateStatus(date);
-                  const isSelected = selectedDate === date;
-                  const isTodayDate = isToday(date);
-                  const isDisabled = status === "booked";
-                  
-                  let bgColor = "bg-white/5";
-                  let textColor = "text-white/80";
-                  let borderColor = "border-transparent";
-                  
-                  if (isSelected) {
-                    bgColor = "bg-pink-500";
-                    textColor = "text-white";
-                    borderColor = "border-pink-400";
-                  } else if (status === "available") {
-                    bgColor = "bg-green-500/20";
-                    textColor = "text-green-400";
-                    borderColor = "border-green-500/30";
-                  } else if (status === "booked") {
-                    bgColor = "bg-red-500/10";
-                    textColor = "text-red-400/50";
-                  }
-                  
-                  return (
-                    <button
-                      key={date}
-                      onClick={() => !isDisabled && setSelectedDate(date)}
-                      disabled={isDisabled}
-                      className={`
-                        flex flex-col items-center min-w-[70px] p-2 rounded-xl border transition-all
-                        ${bgColor} ${textColor} ${borderColor}
-                        ${!isDisabled && status !== "booked" ? "active:scale-95" : "opacity-50"}
-                      `}
-                    >
-                      <span className="text-xs font-medium">
-                        {new Date(date).toLocaleDateString("en-IN", { weekday: "short" })}
-                      </span>
-                      <span className="text-lg font-bold mt-1">
-                        {new Date(date).getDate()}
-                      </span>
-                      <span className="text-[10px] mt-0.5">
-                        {new Date(date).toLocaleDateString("en-IN", { month: "short" })}
-                      </span>
-                      {status === "available" && (
-                        <div className="mt-1 w-1.5 h-1.5 rounded-full bg-green-500" />
-                      )}
-                      {isTodayDate && !isSelected && (
-                        <div className="mt-1 w-1.5 h-1.5 rounded-full bg-pink-500" />
-                      )}
-                    </button>
-                  );
-                })}
+                <Button
+                  variant={calendarView === "full" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setCalendarView("full")}
+                  className={`h-8 px-2 ${calendarView === "full" ? "bg-pink-500 text-white" : "text-white/50"}`}
+                >
+                  <LayoutGrid className="h-3.5 w-3.5 mr-1" />
+                  Full
+                </Button>
               </div>
             </div>
-            
+
+            {/* COMPACT VIEW - Horizontal Scroll */}
+            {calendarView === "compact" && (
+              <>
+                <div className="overflow-x-auto pb-2 -mx-1 px-1">
+                  <div className="flex gap-2 min-w-max">
+                    {nextDates.map((date) => {
+                      const status = getDateStatus(date);
+                      const isSelected = selectedDate === date;
+                      const isTodayDate = isToday(date);
+                      const isDisabled = status === "booked";
+                      
+                      let bgColor = "bg-white/5";
+                      let textColor = "text-white/80";
+                      let borderColor = "border-transparent";
+                      
+                      if (isSelected) {
+                        bgColor = "bg-pink-500";
+                        textColor = "text-white";
+                        borderColor = "border-pink-400";
+                      } else if (status === "available") {
+                        bgColor = "bg-green-500/20";
+                        textColor = "text-green-400";
+                        borderColor = "border-green-500/30";
+                      } else if (status === "booked") {
+                        bgColor = "bg-red-500/10";
+                        textColor = "text-red-400/50";
+                      }
+                      
+                      return (
+                        <button
+                          key={date}
+                          onClick={() => !isDisabled && setSelectedDate(date)}
+                          disabled={isDisabled}
+                          className={`
+                            flex flex-col items-center min-w-[70px] p-2 rounded-xl border transition-all
+                            ${bgColor} ${textColor} ${borderColor}
+                            ${!isDisabled && status !== "booked" ? "active:scale-95" : "opacity-50"}
+                          `}
+                        >
+                          <span className="text-xs font-medium">
+                            {new Date(date).toLocaleDateString("en-IN", { weekday: "short" })}
+                          </span>
+                          <span className="text-lg font-bold mt-1">
+                            {new Date(date).getDate()}
+                          </span>
+                          <span className="text-[10px] mt-0.5">
+                            {new Date(date).toLocaleDateString("en-IN", { month: "short" })}
+                          </span>
+                          {status === "available" && (
+                            <div className="mt-1 w-1.5 h-1.5 rounded-full bg-green-500" />
+                          )}
+                          {isTodayDate && !isSelected && (
+                            <div className="mt-1 w-1.5 h-1.5 rounded-full bg-pink-500" />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div className="text-xs text-white/40 text-center mt-2">
+                  Swipe to see more dates
+                </div>
+              </>
+            )}
+
+            {/* FULL CALENDAR VIEW - Month Grid */}
+            {calendarView === "full" && (
+              <>
+                {/* Month Navigation */}
+                <div className="flex items-center justify-between mb-4">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={goToPreviousMonth}
+                    className="h-8 w-8 text-white/60 hover:text-white"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  <span className="text-sm font-medium">
+                    {currentMonth.toLocaleDateString("en-US", { month: "long", year: "numeric" })}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={goToNextMonth}
+                    className="h-8 w-8 text-white/60 hover:text-white"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                {/* Weekday Headers */}
+                <div className="grid grid-cols-7 gap-1 mb-2">
+                  {weekDays.map((day) => (
+                    <div key={day} className="text-center text-xs font-medium text-white/50 py-1">
+                      {day}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Calendar Days */}
+                <div className="grid grid-cols-7 gap-1">
+                  {calendarDays.map(({ date, isCurrentMonth }, index) => {
+                    const dateStr = date.toISOString().split('T')[0];
+                    const status = getDateStatus(dateStr);
+                    const isSelected = selectedDate === dateStr;
+                    const isPast = date < new Date().setHours(0, 0, 0, 0);
+                    const isTodayDate = isToday(dateStr);
+                    const isDisabled = isPast || status === "booked" || (!status && !isCurrentMonth);
+
+                    let bgColor = "bg-transparent";
+                    let textColor = "text-white/70";
+                    let borderClass = "border-transparent";
+
+                    if (isSelected) {
+                      bgColor = "bg-pink-500";
+                      textColor = "text-white";
+                    } else if (status === "available" && isCurrentMonth && !isPast) {
+                      bgColor = "bg-green-500/20";
+                      textColor = "text-green-400";
+                    } else if (status === "booked") {
+                      bgColor = "bg-red-500/10";
+                      textColor = "text-red-400/50";
+                    } else if (!isCurrentMonth) {
+                      textColor = "text-white/20";
+                    }
+
+                    return (
+                      <button
+                        key={index}
+                        onClick={() => !isDisabled && setSelectedDate(dateStr)}
+                        disabled={isDisabled}
+                        className={`
+                          relative aspect-square rounded-lg transition-all duration-200
+                          ${bgColor} ${textColor}
+                          ${!isDisabled && status === "available" ? "cursor-pointer hover:scale-105" : "cursor-not-allowed"}
+                          ${isTodayDate && !isSelected && status !== "booked" ? "ring-1 ring-pink-500/50" : ""}
+                        `}
+                      >
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <span className={`text-sm font-medium ${isSelected ? "font-bold" : ""}`}>
+                            {date.getDate()}
+                          </span>
+                        </div>
+                        {status === "available" && !isSelected && (
+                          <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 rounded-full bg-green-500" />
+                        )}
+                        {status === "booked" && (
+                          <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 rounded-full bg-red-500" />
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+
             {/* Legend */}
-            <div className="flex flex-wrap gap-3 mt-3 pt-2 text-xs">
+            <div className="flex flex-wrap gap-3 mt-3 pt-2 text-xs border-t border-white/10">
               <div className="flex items-center gap-1.5">
                 <div className="w-2.5 h-2.5 rounded-full bg-green-500" />
                 <span className="text-white/50">Available</span>
