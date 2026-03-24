@@ -455,12 +455,6 @@ Please update status in admin panel.
                         <Phone className="h-3.5 w-3.5" /> Send Reminder
                       </Button>
 
-                       <Button
-  onClick={() => sendManualAdminReminder(booking)}
-  className="bg-orange-500/10 border border-orange-500/20 text-orange-300 hover:bg-orange-500/20 text-xs flex items-center gap-2"
->
-  <Bell className="h-3.5 w-3.5" /> Remind Admin
-</Button>
                       <Button
                         onClick={() => sendAdminReminder(booking)}
                         className="bg-orange-500/10 border border-orange-500/20 text-orange-300 hover:bg-orange-500/20 text-xs flex items-center gap-2"
