@@ -7,7 +7,7 @@ import {
   LogOut, Menu, X, Calendar, Users, LayoutDashboard,
   MapPin, ClipboardList, UserCog, CalendarCheck, Settings
 } from "lucide-react";
-
+import AIChatbot from "../components/AIChatbot";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -529,6 +529,7 @@ function FooterCol({ title, items }) {
           </li>
         ))}
       </ul>
+      <AIChatbot /> 
     </div>
   );
 }
