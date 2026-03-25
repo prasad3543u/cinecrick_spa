@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { api } from "../lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
 import { Loader2, MessageCircle, X, Send, Bot, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
@@ -37,6 +38,7 @@ export default function AIChatbot() {
       const botMessage = { role: "bot", content: response.response };
       setMessages(prev => [...prev, botMessage]);
     } catch (err) {
+      console.error("Chat error:", err);
       toast.error("Failed to get response. Please try again.");
     } finally {
       setLoading(false);
@@ -55,7 +57,7 @@ export default function AIChatbot() {
   }
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 w-96 h-[500px] bg-zinc-900 rounded-2xl shadow-2xl border border-white/10 flex flex-col overflow-hidden">
+    <div className="fixed bottom-6 right-6 z-50 w-96 h-[550px] bg-zinc-900 rounded-2xl shadow-2xl border border-white/10 flex flex-col overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-white/10 bg-gradient-to-r from-pink-500/10 to-violet-500/10">
         <div className="flex items-center gap-2">
@@ -63,7 +65,7 @@ export default function AIChatbot() {
             <Bot className="h-4 w-4 text-white" />
           </div>
           <div>
-            <h3 className="font-semibold">CrickOps AI</h3>
+            <h3 className="font-semibold">CrickOps AI Assistant</h3>
             <p className="text-xs text-white/50">Powered by Gemini</p>
           </div>
         </div>
@@ -84,6 +86,11 @@ export default function AIChatbot() {
             <p className="text-white/50 text-xs mt-1">
               Ask me about grounds, bookings, or anything cricket!
             </p>
+            <div className="mt-4 space-y-2">
+              <SuggestionChip text="Recommend a ground near Bangalore" onClick={() => setInput("Recommend a ground near Bangalore")} />
+              <SuggestionChip text="What's your cancellation policy?" onClick={() => setInput("What's your cancellation policy?")} />
+              <SuggestionChip text="How do I book a slot?" onClick={() => setInput("How do I book a slot?")} />
+            </div>
           </div>
         )}
         
@@ -135,5 +142,16 @@ export default function AIChatbot() {
         </div>
       </div>
     </div>
+  );
+}
+
+function SuggestionChip({ text, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      className="block w-full text-left px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-sm text-white/70 transition"
+    >
+      {text}
+    </button>
   );
 }
