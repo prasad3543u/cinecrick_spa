@@ -6,9 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { 
   Users, Calendar, DollarSign, TrendingUp, TrendingDown,
-  Loader2, Download, CalendarDays, Clock
+  Loader2, Download, CalendarDays, Clock, MessageCircle, Bell
 } from "lucide-react";
 import { toast } from "sonner";
+import { openWhatsAppConfirmation, openWhatsAppReminder } from "../utils/whatsapp";
 import {
   LineChart,
   Line,
@@ -320,7 +321,7 @@ export default function AdminDashboard() {
         </Card>
       </div>
 
-      {/* Recent Bookings */}
+      {/* Recent Bookings with WhatsApp Buttons */}
       <div className="mt-6">
         <Card className="bg-zinc-900 border-white/10">
           <CardContent className="p-6">
@@ -332,13 +333,33 @@ export default function AdminDashboard() {
                     <p className="font-medium">{booking.user?.name}</p>
                     <p className="text-xs text-white/50">{booking.ground?.name} • {booking.booking_date}</p>
                   </div>
-                  <Badge className={`text-xs ${
-                    booking.status === "confirmed" ? "bg-green-500/20 text-green-400" :
-                    booking.status === "cancelled" ? "bg-red-500/20 text-red-400" :
-                    "bg-yellow-500/20 text-yellow-400"
-                  }`}>
-                    {booking.status}
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge className={`text-xs ${
+                      booking.status === "confirmed" ? "bg-green-500/20 text-green-400" :
+                      booking.status === "cancelled" ? "bg-red-500/20 text-red-400" :
+                      "bg-yellow-500/20 text-yellow-400"
+                    }`}>
+                      {booking.status}
+                    </Badge>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => openWhatsAppConfirmation(booking)}
+                      className="text-green-400 hover:text-green-300"
+                      title="Send WhatsApp Confirmation"
+                    >
+                      <MessageCircle className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => openWhatsAppReminder(booking)}
+                      className="text-yellow-400 hover:text-yellow-300"
+                      title="Send Reminder"
+                    >
+                      <Bell className="h-4 w-4" />
+                    </Button>
+                  </div>
                 </div>
               ))}
             </div>

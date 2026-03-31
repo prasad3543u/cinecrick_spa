@@ -10,12 +10,13 @@ import AdminSlots from "./pages/AdminSlots";
 import AdminBookings from "./pages/AdminBookings";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminToday from "./pages/AdminToday";
+import AdminUsers from "./pages/AdminUsers";
 import UserProfile from "./pages/UserProfile";
+import Settings from "./pages/Settings";
+import AdminOfflineBooking from "./pages/admin/AdminOfflineBooking";
 import PrivateRoute from "./components/PrivateRoute";
 import AdminRoute from "./components/AdminRoute";
-import AdminUsers from "./pages/AdminUsers";
-import Settings from "./pages/Settings";
-import MainLayout from "./layouts/MainLayout";    
+import MainLayout from "./layouts/MainLayout";
 
 export default function App() {
   return (
@@ -90,9 +91,9 @@ export default function App() {
         </AdminRoute>
       } />
 
-       <Route path="/admin/slots/:groundId" element={
+      <Route path="/admin/slots/:groundId" element={
         <AdminRoute>
-         <AdminSlots />
+          <AdminSlots />
         </AdminRoute> 
       } />
 
@@ -124,6 +125,15 @@ export default function App() {
         <AdminRoute>
           <MainLayout>
             <AdminToday />
+          </MainLayout>
+        </AdminRoute>
+      } />
+
+      {/* Admin Offline Booking */}
+      <Route path="/admin/offline-booking" element={
+        <AdminRoute>
+          <MainLayout>
+            <AdminOfflineBooking />
           </MainLayout>
         </AdminRoute>
       } />
