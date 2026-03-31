@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { 
   Users, Calendar, DollarSign, TrendingUp, TrendingDown,
-  Loader2, Download, CalendarDays, Clock, MessageCircle, Bell
+  Loader2, Download, CalendarDays, Clock, MessageCircle, Bell, Plus
 } from "lucide-react";
 import { toast } from "sonner";
 import { openWhatsAppConfirmation, openWhatsAppReminder } from "../utils/whatsapp";
@@ -51,10 +51,8 @@ export default function AdminDashboard() {
 
   async function loadAnalytics() {
     try {
-      // Fetch bookings data for analytics
       const bookings = await api("/admin/bookings");
       
-      // Process revenue data by date
       const revenueMap = {};
       bookings.forEach(booking => {
         if (booking.status === "confirmed") {
@@ -65,11 +63,10 @@ export default function AdminDashboard() {
       
       const revenueArray = Object.entries(revenueMap)
         .map(([date, revenue]) => ({ date, revenue }))
-        .slice(-7); // Last 7 days
+        .slice(-7);
       
       setRevenueData(revenueArray);
       
-      // Process peak hours data
       const hourMap = {};
       bookings.forEach(booking => {
         if (booking.slot?.start_time) {
@@ -84,7 +81,6 @@ export default function AdminDashboard() {
       
       setPeakHours(peakHoursArray);
       
-      // Process booking trend
       const trendMap = {};
       bookings.forEach(booking => {
         const date = booking.booking_date;
@@ -102,7 +98,6 @@ export default function AdminDashboard() {
     }
   }
 
-  // Export data as CSV
   const exportToCSV = () => {
     if (!stats) return;
     
@@ -145,6 +140,10 @@ export default function AdminDashboard() {
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-3xl font-bold text-pink-400">Admin Dashboard</h1>
         <div className="flex gap-2">
+          <Button onClick={() => navigate("/admin/offline-booking")} className="bg-emerald-500">
+            <Plus className="h-4 w-4 mr-1" />
+            Offline Booking
+          </Button>
           <Button onClick={exportToCSV} variant="outline" className="border-white/10 text-white">
             <Download className="h-4 w-4 mr-1" />
             Export Report
