@@ -1,13 +1,13 @@
-
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { api, clearToken } from "../lib/api";
 import {
   Zap, Compass, Lock, Trophy, ChevronDown, Search,
   LogOut, Menu, X, Calendar, Users, LayoutDashboard,
-  MapPin, ClipboardList, UserCog, CalendarCheck, Settings
+  MapPin, ClipboardList, UserCog, CalendarCheck, Settings,
+  ArrowRight, CheckCircle
 } from "lucide-react";
-import AIChatbot from "../components/AIChatbot";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -29,6 +29,7 @@ export default function Home() {
   const [user, setUser] = useState(null);
   const [loadingUser, setLoadingUser] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [grounds, setGrounds] = useState([]);
 
   useEffect(() => {
     let cancelled = false;
@@ -56,6 +57,17 @@ export default function Home() {
     return () => { cancelled = true; };
   }, [navigate]);
 
+  // Load featured grounds
+  useEffect(() => {
+    async function loadGrounds() {
+      try {
+        const data = await api("/grounds");
+        setGrounds(Array.isArray(data) ? data.slice(0, 3) : []);
+      } catch { }
+    }
+    loadGrounds();
+  }, []);
+
   function logout() {
     clearToken();
     navigate("/", { replace: true });
@@ -75,16 +87,13 @@ export default function Home() {
     if (item === "Today's Matches") { navigate("/admin/today"); return; }
   }
 
-  const MENUS = useMemo(() => {
-    const base = {
-      Cricket: ["Grounds", "Live Matches", "Scores", "Schedule", "Teams", "Highlights", "Rankings", "Stats"],
-      Bookings: ["Ground Booking", "My Bookings", "Cancel Booking", "Refund Status", "Payment Help", "Support"],
-      Account: user?.role === "admin"
-        ? ["Profile", "Admin Dashboard", "Admin Users", "Admin Grounds", "Admin Bookings", "Today's Matches", "My Bookings", "Settings", "Logout"]
-        : ["Profile", "My Bookings", "Settings", "Logout"],
-    };
-    return base;
-  }, [user]);
+  const MENUS = useMemo(() => ({
+    Cricket: ["Grounds", "Live Matches", "Scores", "Schedule", "Teams", "Highlights", "Rankings", "Stats"],
+    Bookings: ["Ground Booking", "My Bookings", "Cancel Booking", "Refund Status", "Payment Help", "Support"],
+    Account: user?.role === "admin"
+      ? ["Profile", "Admin Dashboard", "Admin Users", "Admin Grounds", "Admin Bookings", "Today's Matches", "My Bookings", "Settings", "Logout"]
+      : ["Profile", "My Bookings", "Settings", "Logout"],
+  }), [user]);
 
   const slides = useMemo(() => [
     {
@@ -117,7 +126,12 @@ export default function Home() {
   if (loadingUser) {
     return (
       <div className="min-h-screen bg-[#070812] text-white flex items-center justify-center">
-        <div className="text-white/70">Loading CrickOps...</div>
+        <div className="flex flex-col items-center gap-3">
+          <div className="grid h-12 w-12 place-items-center rounded-2xl bg-gradient-to-br from-green-500 to-emerald-600 font-black text-lg animate-pulse">
+            C
+          </div>
+          <div className="text-white/70 text-sm">Loading CrickOps...</div>
+        </div>
       </div>
     );
   }
@@ -126,6 +140,7 @@ export default function Home() {
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#070812] text-white">
+
       {/* Background blobs */}
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute -top-40 left-10 h-[520px] w-[520px] rounded-full bg-green-500/15 blur-3xl animate-[blob_14s_infinite]" />
@@ -146,12 +161,11 @@ export default function Home() {
         }
       `}</style>
 
-      {/* Header */}
+      {/* ── HEADER ── */}
       <header className="sticky top-0 z-50 border-b border-white/10 bg-black/55 backdrop-blur-xl">
         <div className="w-full px-4 lg:px-14 py-3">
-
-          {/* Top row */}
           <div className="flex items-center justify-between gap-2">
+
             {/* Logo */}
             <div className="flex items-center gap-2">
               <div className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 font-black text-sm shadow-[0_16px_35px_rgba(16,185,129,.3)]">
@@ -174,17 +188,13 @@ export default function Home() {
                   {String(user.email || "U")[0]?.toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              <Button
-                onClick={logout}
-                size="sm"
-                className="h-8 rounded-full bg-gradient-to-r from-green-500 to-emerald-600 font-bold hover:opacity-95"
-              >
-                <LogOut className="mr-1 h-3 w-3" />
-                Logout
+              <Button onClick={logout} size="sm"
+                className="h-8 rounded-full bg-gradient-to-r from-green-500 to-emerald-600 font-bold hover:opacity-95">
+                <LogOut className="mr-1 h-3 w-3" /> Logout
               </Button>
             </div>
 
-            {/* Mobile: avatar + hamburger */}
+            {/* Mobile */}
             <div className="flex md:hidden items-center gap-2">
               {user.role === "admin" && (
                 <span className="rounded-full bg-emerald-500/20 border border-emerald-500/30 px-2 py-0.5 text-xs text-emerald-300 font-semibold">
@@ -196,17 +206,14 @@ export default function Home() {
                   {String(user.email || "U")[0]?.toUpperCase()}
                 </AvatarFallback>
               </Avatar>
-              <button
-                type="button"
-                onClick={() => setMobileMenuOpen((p) => !p)}
-                className="grid h-9 w-9 place-items-center rounded-xl border border-white/10 bg-white/5"
-              >
+              <button type="button" onClick={() => setMobileMenuOpen((p) => !p)}
+                className="grid h-9 w-9 place-items-center rounded-xl border border-white/10 bg-white/5">
                 {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
               </button>
             </div>
           </div>
 
-          {/* Desktop nav menus */}
+          {/* Desktop nav */}
           <div className="hidden md:block mt-4">
             <NavigationMenu>
               <NavigationMenuList className="flex flex-wrap gap-2">
@@ -251,15 +258,12 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Hero Slider */}
+      {/* ── HERO SLIDER ── */}
       <section className="w-full px-4 lg:px-14 pt-4">
         <Card className="overflow-hidden border-white/10 bg-zinc-950/40 shadow-[0_28px_80px_rgba(0,0,0,.65)]">
           <CardContent className="relative p-0">
-            <img
-              src={slides[slide].img}
-              alt={slides[slide].title}
-              className="h-[280px] sm:h-[380px] lg:h-[460px] w-full object-cover saturate-125 contrast-110"
-            />
+            <img src={slides[slide].img} alt={slides[slide].title}
+              className="h-[280px] sm:h-[380px] lg:h-[460px] w-full object-cover saturate-125 contrast-110" />
             <div className="absolute inset-0 bg-gradient-to-r from-black/85 via-black/35 to-transparent p-4 sm:p-7">
               <Badge className="bg-emerald-500/15 text-emerald-200 border border-emerald-500/25">
                 {slides[slide].tag}
@@ -280,7 +284,6 @@ export default function Home() {
                   My Bookings
                 </Button>
               </div>
-
               <div className="absolute bottom-4 left-4 sm:left-7 flex gap-2">
                 {slides.map((_, i) => (
                   <button key={i} onClick={() => setSlide(i)} type="button"
@@ -289,27 +292,109 @@ export default function Home() {
               </div>
               <button type="button"
                 onClick={() => setSlide((s) => (s - 1 + slides.length) % slides.length)}
-                className="absolute left-2 top-1/2 -translate-y-1/2 grid h-8 w-8 sm:h-11 sm:w-11 place-items-center rounded-full border border-white/10 bg-black/40 text-xl hover:bg-black/60">
-                ‹
-              </button>
+                className="absolute left-2 top-1/2 -translate-y-1/2 grid h-8 w-8 sm:h-11 sm:w-11 place-items-center rounded-full border border-white/10 bg-black/40 text-xl hover:bg-black/60">‹</button>
               <button type="button"
                 onClick={() => setSlide((s) => (s + 1) % slides.length)}
-                className="absolute right-2 top-1/2 -translate-y-1/2 grid h-8 w-8 sm:h-11 sm:w-11 place-items-center rounded-full border border-white/10 bg-black/40 text-xl hover:bg-black/60">
-                ›
-              </button>
+                className="absolute right-2 top-1/2 -translate-y-1/2 grid h-8 w-8 sm:h-11 sm:w-11 place-items-center rounded-full border border-white/10 bg-black/40 text-xl hover:bg-black/60">›</button>
             </div>
           </CardContent>
         </Card>
       </section>
 
-      {/* About section */}
+      {/* ── HOW IT WORKS ── */}
+      <section className="w-full px-4 lg:px-14 py-8">
+        <div className="mb-6">
+          <h2 className="text-2xl font-black text-white">How It Works</h2>
+          <p className="text-white/40 text-sm mt-1">Book your ground in 3 simple steps</p>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {[
+            { step: "01", title: "Browse Grounds", desc: "Explore available cricket grounds with photos, location, slots and pricing.", icon: <MapPin className="h-6 w-6" />, color: "emerald" },
+            { step: "02", title: "Choose a Slot", desc: "Pick a morning, evening or weekend slot that fits your schedule.", icon: <Calendar className="h-6 w-6" />, color: "cyan" },
+            { step: "03", title: "Confirm & Play", desc: "Admin confirms your booking. Umpire and groundsman are arranged for you.", icon: <CheckCircle className="h-6 w-6" />, color: "violet" },
+          ].map((item) => {
+            const colors = {
+              emerald: "border-emerald-500/20 bg-emerald-500/5 text-emerald-400",
+              cyan: "border-cyan-500/20 bg-cyan-500/5 text-cyan-400",
+              violet: "border-violet-500/20 bg-violet-500/5 text-violet-400",
+            };
+            return (
+              <div key={item.step} className={`rounded-2xl border p-5 ${colors[item.color]}`}>
+                <div className="flex items-center gap-3 mb-3">
+                  <div className={`grid h-10 w-10 place-items-center rounded-xl border ${colors[item.color]}`}>
+                    {item.icon}
+                  </div>
+                  <span className="text-3xl font-black opacity-20">{item.step}</span>
+                </div>
+                <h3 className="font-bold text-white text-base">{item.title}</h3>
+                <p className="text-xs text-white/50 mt-1 leading-relaxed">{item.desc}</p>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* ── FEATURED GROUNDS ── */}
+      {grounds.length > 0 && (
+        <section className="w-full px-4 lg:px-14 py-4">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-2xl font-black text-white">Featured Grounds</h2>
+              <p className="text-white/40 text-sm mt-1">Top cricket grounds available for booking</p>
+            </div>
+            <Button onClick={() => navigate("/grounds")}
+              className="bg-white/5 border border-white/10 text-white/70 hover:bg-white/10 flex items-center gap-2 text-sm">
+              View All <ArrowRight className="h-4 w-4" />
+            </Button>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {grounds.map((ground) => (
+              <div key={ground.id}
+                onClick={() => navigate(`/grounds/${ground.id}`)}
+                className="group cursor-pointer rounded-2xl border border-white/10 bg-zinc-950/55 overflow-hidden hover:border-emerald-500/30 transition-all duration-300">
+                <div className="relative overflow-hidden">
+                  <img
+                    src={ground.image_url}
+                    alt={ground.name}
+                    className="h-44 w-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    onError={(e) => {
+                      e.target.src = "https://images.unsplash.com/photo-1531415074968-036ba1b575da?w=600";
+                    }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+                  <span className="absolute bottom-3 left-3 text-xs font-semibold bg-black/60 backdrop-blur px-2 py-1 rounded-full text-white/80">
+                    {ground.sport_type}
+                  </span>
+                </div>
+                <div className="p-4 space-y-2">
+                  <h3 className="font-bold text-white text-base leading-tight">{ground.name}</h3>
+                  <div className="flex items-center gap-1 text-white/50 text-xs">
+                    <MapPin className="h-3 w-3 text-emerald-400 shrink-0" />
+                    <span className="truncate">{ground.location}</span>
+                  </div>
+                  <div className="flex items-center justify-between pt-1">
+                    <p className="text-emerald-400 font-bold">
+                      ₹{ground.price_per_hour}
+                      <span className="text-white/30 text-xs font-normal">/hr</span>
+                    </p>
+                    <span className="text-xs text-emerald-400 font-semibold flex items-center gap-1">
+                      Book Now <ArrowRight className="h-3 w-3" />
+                    </span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* ── ABOUT + WHY ── */}
       <section className="w-full px-4 lg:px-14 py-6">
         <div className="grid gap-4 lg:grid-cols-2">
           <DarkCard title="About CrickOps">
             <p className="text-white/80 leading-relaxed text-sm sm:text-base">
               CrickOps is your complete cricket ground management platform.
-              Book slots, manage teams, coordinate umpires and groundsmen —
-              all in one place.
+              Book slots, manage teams, coordinate umpires and groundsmen — all in one place.
             </p>
             <div className="mt-4 space-y-1 text-sm text-white">
               <p><span className="font-semibold text-emerald-400">Email:</span> {user.email || "—"}</p>
@@ -329,29 +414,23 @@ export default function Home() {
 
           <DarkCard title="Why CrickOps">
             <div className="mt-2 grid gap-3 sm:grid-cols-2">
-              <Pro icon={<Zap className="h-6 w-6" />}
-                title="Fast booking"
+              <Pro icon={<Zap className="h-6 w-6" />} title="Fast booking"
                 desc="Quick flow from slot selection to confirmation." />
-              <Pro icon={<Compass className="h-6 w-6" />}
-                title="Smart navigation"
+              <Pro icon={<Compass className="h-6 w-6" />} title="Smart navigation"
                 desc="Dropdown menus with search and scrollable options." />
-              <Pro icon={<Lock className="h-6 w-6" />}
-                title="Protected pages"
+              <Pro icon={<Lock className="h-6 w-6" />} title="Protected pages"
                 desc="Secure access — home opens only after signup." />
-              <Pro icon={<Users className="h-6 w-6" />}
-                title="Full operations"
+              <Pro icon={<Users className="h-6 w-6" />} title="Full operations"
                 desc="Umpires, groundsmen, reminders — all managed here." />
             </div>
           </DarkCard>
         </div>
       </section>
 
-      {/* Admin Section — only visible to admins */}
+      {/* ── ADMIN PANEL ── */}
       {user.role === "admin" && (
         <section className="w-full px-4 lg:px-14 py-6">
           <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-6">
-
-            {/* Admin section header */}
             <div className="flex items-center gap-3 mb-6">
               <div className="grid h-10 w-10 place-items-center rounded-xl bg-emerald-500/20 border border-emerald-500/30">
                 <LayoutDashboard className="h-5 w-5 text-emerald-400" />
@@ -361,57 +440,25 @@ export default function Home() {
                 <p className="text-xs text-white/40">Quick access to all admin operations</p>
               </div>
             </div>
-
-            {/* Admin quick action cards */}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-              <AdminCard
-                icon={<CalendarCheck className="h-6 w-6" />}
-                label="Today's Matches"
-                desc="Match day dashboard"
-                color="emerald"
-                onClick={() => navigate("/admin/today")}
-              />
-              <AdminCard
-                icon={<ClipboardList className="h-6 w-6" />}
-                label="All Bookings"
-                desc="Confirm & manage"
-                color="violet"
-                onClick={() => navigate("/admin/bookings")}
-              />
-              <AdminCard
-                icon={<MapPin className="h-6 w-6" />}
-                label="Grounds"
-                desc="Add & edit grounds"
-                color="cyan"
-                onClick={() => navigate("/admin/grounds")}
-              />
-              <AdminCard
-                icon={<LayoutDashboard className="h-6 w-6" />}
-                label="Dashboard"
-                desc="Stats & overview"
-                color="pink"
-                onClick={() => navigate("/admin/dashboard")}
-              />
-              <AdminCard
-                icon={<UserCog className="h-6 w-6" />}
-                label="Users"
-                desc="Manage roles"
-                color="yellow"
-                onClick={() => navigate("/admin/users")}
-              />
-              <AdminCard
-                icon={<Settings className="h-6 w-6" />}
-                label="Settings"
-                desc="Account settings"
-                color="white"
-                onClick={() => navigate("/settings")}
-              />
+              <AdminCard icon={<CalendarCheck className="h-6 w-6" />} label="Today's Matches"
+                desc="Match day dashboard" color="emerald" onClick={() => navigate("/admin/today")} />
+              <AdminCard icon={<ClipboardList className="h-6 w-6" />} label="All Bookings"
+                desc="Confirm & manage" color="violet" onClick={() => navigate("/admin/bookings")} />
+              <AdminCard icon={<MapPin className="h-6 w-6" />} label="Grounds"
+                desc="Add & edit grounds" color="cyan" onClick={() => navigate("/admin/grounds")} />
+              <AdminCard icon={<LayoutDashboard className="h-6 w-6" />} label="Dashboard"
+                desc="Stats & overview" color="pink" onClick={() => navigate("/admin/dashboard")} />
+              <AdminCard icon={<UserCog className="h-6 w-6" />} label="Users"
+                desc="Manage roles" color="yellow" onClick={() => navigate("/admin/users")} />
+              <AdminCard icon={<Settings className="h-6 w-6" />} label="Settings"
+                desc="Account settings" color="white" onClick={() => navigate("/settings")} />
             </div>
           </div>
         </section>
       )}
 
-      {/* Footer */}
+      {/* ── FOOTER ── */}
       <footer className="mt-14 border-t border-emerald-500/20 bg-gradient-to-b from-black to-[#070812] shadow-[0_-20px_80px_rgba(16,185,129,0.15)]">
         <div className="w-full px-4 lg:px-14 py-10 grid gap-8 sm:grid-cols-2 md:grid-cols-4">
           <div>
@@ -444,11 +491,8 @@ function AdminCard({ icon, label, desc, color, onClick }) {
     white:   "border-white/20 bg-white/5 text-white/70 hover:bg-white/10",
   };
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`flex flex-col items-center gap-2 rounded-2xl border p-4 transition text-center ${colors[color]}`}
-    >
+    <button type="button" onClick={onClick}
+      className={`flex flex-col items-center gap-2 rounded-2xl border p-4 transition text-center ${colors[color]}`}>
       {icon}
       <span className="text-sm font-bold leading-tight">{label}</span>
       <span className="text-xs text-white/40 leading-tight">{desc}</span>
@@ -462,8 +506,7 @@ function MenuDropdown({ label, items, onPick }) {
     <DropdownMenu onOpenChange={(open) => open && setTimeout(() => inputRef.current?.focus(), 0)}>
       <DropdownMenuTrigger asChild>
         <Button className="rounded-xl border border-white/10 bg-white/5 text-white hover:bg-white/10 text-sm">
-          {label}
-          <ChevronDown className="ml-2 h-4 w-4 opacity-80" />
+          {label} <ChevronDown className="ml-2 h-4 w-4 opacity-80" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="w-72 sm:w-80 rounded-2xl border-white/10 bg-zinc-950/95 text-white shadow-2xl backdrop-blur-xl">
@@ -523,13 +566,11 @@ function FooterCol({ title, items }) {
       <div className="font-bold text-white">{title}</div>
       <ul className="mt-3 space-y-2 text-sm text-white/70">
         {items.map((x) => (
-          <li key={x}
-            className="cursor-pointer hover:text-emerald-400 hover:translate-x-1 transition-all duration-200">
+          <li key={x} className="cursor-pointer hover:text-emerald-400 hover:translate-x-1 transition-all duration-200">
             {x}
           </li>
         ))}
       </ul>
-      <AIChatbot /> 
     </div>
   );
 }
