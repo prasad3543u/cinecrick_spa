@@ -16,15 +16,47 @@ import {
 export default function Login() {
   const navigate = useNavigate();
 
-  const [showPwd, setShowPwd] = useState(false);
-  const [remember, setRemember] = useState(false);
-  const [form, setForm] = useState({ email: "", password: "" });
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [showPwd, setShowPwd]     = useState(false);
+  const [remember, setRemember]   = useState(false);
+  const [form, setForm]           = useState({ email: "", password: "" });
+  const [error, setError]         = useState("");
+  const [loading, setLoading]     = useState(false);
   const [openForgot, setOpenForgot] = useState(false);
   const [forgotEmail, setForgotEmail] = useState("");
   const [forgotMsg, setForgotMsg] = useState("");
 
+  // Server wake-up state
+  const [serverReady, setServerReady]     = useState(false);
+  const [serverWaking, setServerWaking]   = useState(true);
+  const [wakeMessage, setWakeMessage]     = useState("Waking server...");
+
+  // Wake up backend on page load
+  useEffect(() => {
+    let cancelled = false;
+
+    async function wakeServer(retry = 0) {
+      try {
+        await api("/");
+        if (!cancelled) {
+          setServerReady(true);
+          setServerWaking(false);
+        }
+      } catch {
+        if (retry < 5 && !cancelled) {
+          setWakeMessage(`Server is starting up... (${retry + 1}/5)`);
+          setTimeout(() => wakeServer(retry + 1), 4000);
+        } else if (!cancelled) {
+          setServerReady(true); // let them try anyway
+          setServerWaking(false);
+        }
+      }
+    }
+
+    wakeServer();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Remember me
   useEffect(() => {
     const remembered = localStorage.getItem("cinecrick_remember") === "true";
     const rememberedEmail = localStorage.getItem("cinecrick_remember_email") || "";
@@ -34,6 +66,7 @@ export default function Login() {
     }
   }, []);
 
+  // Already logged in
   useEffect(() => {
     const token = getToken();
     if (token) navigate("/home", { replace: true });
@@ -92,16 +125,12 @@ export default function Login() {
   return (
     <div className="relative min-h-screen text-white overflow-hidden">
 
-      {/* Background — full cricket */}
+      {/* Background */}
       <div className="absolute inset-0">
         <div className="h-full w-full bg-[url('/cricket.jpg')] bg-cover bg-center scale-105 animate-[slowZoom_20s_linear_infinite]" />
         <div className="absolute inset-0 bg-black/70" />
       </div>
-
-      {/* Grid overlay */}
       <div className="pointer-events-none absolute inset-0 opacity-[0.06] bg-[linear-gradient(to_right,white_1px,transparent_1px),linear-gradient(to_bottom,white_1px,transparent_1px)] bg-[size:60px_60px]" />
-
-      {/* Green glow */}
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(900px_420px_at_50%_0%,rgba(16,185,129,.18),transparent_60%)]" />
 
       {/* Logo */}
@@ -118,10 +147,24 @@ export default function Login() {
           <Trophy className="h-3.5 w-3.5 text-emerald-400" />
           Cricket Ground Management Platform
         </p>
+
+        {/* Server wake status */}
+        {serverWaking && (
+          <div className="mt-3 flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-4 py-1.5 text-xs text-emerald-300">
+            <Loader2 className="h-3 w-3 animate-spin" />
+            {wakeMessage}
+          </div>
+        )}
+        {serverReady && !serverWaking && (
+          <div className="mt-3 flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-4 py-1.5 text-xs text-emerald-300">
+            <span className="h-2 w-2 rounded-full bg-emerald-400" />
+            Server ready
+          </div>
+        )}
       </div>
 
       {/* Card */}
-      <div className="relative z-20 flex items-center justify-center px-4 py-10">
+      <div className="relative z-20 flex items-center justify-center px-4 py-8">
         <Card className="w-full max-w-md bg-black/70 backdrop-blur-2xl border border-white/10 shadow-[0_0_60px_rgba(0,0,0,0.9)] rounded-3xl animate-fadeUp">
           <CardContent className="p-8">
             <div className="mb-6">
@@ -199,13 +242,15 @@ export default function Login() {
                 </button>
               </div>
 
-              {/* Submit */}
+              {/* Submit — disabled while server is waking */}
               <Button
                 type="submit"
-                disabled={loading}
+                disabled={loading || serverWaking}
                 className="w-full h-11 bg-gradient-to-r from-green-500 to-emerald-600 font-bold hover:opacity-95 transition disabled:opacity-60 text-base"
               >
-                {loading
+                {serverWaking
+                  ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Waiting for server...</>
+                  : loading
                   ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Logging in...</>
                   : <><LogIn className="mr-2 h-4 w-4" /> Login</>
                 }
@@ -244,7 +289,7 @@ export default function Login() {
             />
             {savedEmailHint && (
               <p className="text-xs text-white/50">
-                Remembered email: <span className="text-white/80 font-semibold">{savedEmailHint}</span>
+                Remembered: <span className="text-white/80 font-semibold">{savedEmailHint}</span>
               </p>
             )}
             {forgotMsg && <p className="text-sm text-emerald-300 mt-1">{forgotMsg}</p>}
