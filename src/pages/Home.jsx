@@ -5,7 +5,7 @@ import {
   Zap, Compass, Lock, Trophy, ChevronDown, Search,
   LogOut, Menu, X, Calendar, Users, LayoutDashboard,
   MapPin, ClipboardList, UserCog, CalendarCheck, Settings,
-  ArrowRight, CheckCircle
+  ArrowRight, CheckCircle, CalendarPlus
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -427,7 +427,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── ADMIN PANEL ── */}
+      {/* ── ADMIN PANEL (with Offline Booking card) ── */}
       {user.role === "admin" && (
         <section className="w-full px-4 lg:px-14 py-6">
           <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-6">
@@ -440,7 +440,7 @@ export default function Home() {
                 <p className="text-xs text-white/40">Quick access to all admin operations</p>
               </div>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
               <AdminCard icon={<CalendarCheck className="h-6 w-6" />} label="Today's Matches"
                 desc="Match day dashboard" color="emerald" onClick={() => navigate("/admin/today")} />
               <AdminCard icon={<ClipboardList className="h-6 w-6" />} label="All Bookings"
@@ -453,6 +453,9 @@ export default function Home() {
                 desc="Manage roles" color="yellow" onClick={() => navigate("/admin/users")} />
               <AdminCard icon={<Settings className="h-6 w-6" />} label="Settings"
                 desc="Account settings" color="white" onClick={() => navigate("/settings")} />
+              {/* Offline Booking card */}
+              <AdminCard icon={<CalendarPlus className="h-6 w-6" />} label="Offline Booking"
+                desc="Add manual bookings" color="emerald" onClick={() => navigate("/admin/offline-booking")} />
             </div>
           </div>
         </section>
