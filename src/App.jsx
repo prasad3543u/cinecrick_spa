@@ -141,11 +141,11 @@ export default function App() {
       } />
 
       <Route path="/partner/dashboard" element={
-        <PrivateRoute>
+        <AdminRoute>
           <MainLayout>
             <PartnerDashboard />
           </MainLayout>
-        </PrivateRoute>
+        </AdminRoute>
       } />
 
 

@@ -461,7 +461,7 @@ export default function Home() {
       )}
 
       {/* ── PARTNER PANEL ── */}
-      {user.role === "partner" && (
+      {user.role === "admin" && (
         <section className="w-full px-4 lg:px-14 py-6">
           <div className="rounded-2xl border border-violet-500/20 bg-violet-500/5 p-6">
             <div className="flex items-center gap-3 mb-6">
