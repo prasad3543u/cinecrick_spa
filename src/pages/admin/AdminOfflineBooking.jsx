@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { 
   MapPin, Clock, Shield, User, Phone, Loader2, 
-  Calendar as CalendarIcon, CheckCircle, Users, DollarSign, Briefcase
+  CheckCircle, DollarSign
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -26,12 +26,6 @@ export default function AdminOfflineBooking() {
     { name: "", phone: "", email: "", payment_amount: "", payment_status: "paid" },
     { name: "", phone: "", email: "", payment_amount: "", payment_status: "paid" }
   ]);
-  const [umpire, setUmpire] = useState({
-    name: "",
-    amount: "",
-    status: "pending",
-    paid_by: ""
-  });
   const [loading, setLoading] = useState(false);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [slotError, setSlotError] = useState("");
@@ -46,7 +40,6 @@ export default function AdminOfflineBooking() {
     }
   }, [selectedGround, selectedDate]);
 
-  // Adjust teams based on match type
   useEffect(() => {
     if (matchType === "with_opponents") {
       setTeams([
@@ -103,10 +96,6 @@ export default function AdminOfflineBooking() {
     setTeams(newTeams);
   }
 
-  function handleUmpireChange(field, value) {
-    setUmpire(prev => ({ ...prev, [field]: value }));
-  }
-
   async function handleSubmit(e) {
     e.preventDefault();
     if (!selectedSlot) {
@@ -127,11 +116,8 @@ export default function AdminOfflineBooking() {
           slot_id: selectedSlot.id,
           booking_date: selectedDate,
           match_type: matchType,
-          users: teams,
-          umpire_name: umpire.name,
-          umpire_amount: umpire.amount,
-          umpire_paid: umpire.status,
-          umpire_paid_by: umpire.paid_by
+          users: teams
+          // No umpire payment here
         }
       });
       toast.success("Offline booking(s) created successfully");
@@ -145,7 +131,6 @@ export default function AdminOfflineBooking() {
         { name: "", phone: "", email: "", payment_amount: "", payment_status: "paid" },
         { name: "", phone: "", email: "", payment_amount: "", payment_status: "paid" }
       ]);
-      setUmpire({ name: "", amount: "", status: "pending", paid_by: "" });
     } catch (err) {
       toast.error(err?.message || "Failed to create booking");
     } finally {
@@ -156,17 +141,6 @@ export default function AdminOfflineBooking() {
   function calculateTotalPrice() {
     return teams.reduce((sum, t) => sum + (parseFloat(t.payment_amount) || 0), 0);
   }
-
-  // Helper to format date for display
-  const formatDate = (dateStr) => {
-    if (!dateStr) return "";
-    const date = new Date(dateStr);
-    return date.toLocaleDateString("en-IN", { 
-      weekday: "short", 
-      month: "short", 
-      day: "numeric" 
-    });
-  };
 
   if (!selectedGround && grounds.length === 0) {
     return (
@@ -196,12 +170,14 @@ export default function AdminOfflineBooking() {
             setSelectedGround(ground);
           }}
         >
-          <SelectTrigger className="bg-black/40 border-white/10">
+          <SelectTrigger className="bg-black/40 border-white/10 text-white [&>span]:text-white">
             <SelectValue placeholder="Choose a ground" />
           </SelectTrigger>
-          <SelectContent className="bg-zinc-900 border-white/10">
+          <SelectContent className="bg-zinc-900 border-white/10 text-white">
             {grounds.map(g => (
-              <SelectItem key={g.id} value={g.id.toString()}>{g.name}</SelectItem>
+              <SelectItem key={g.id} value={g.id.toString()} className="text-white focus:bg-white/10 focus:text-white">
+                {g.name}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -437,7 +413,7 @@ export default function AdminOfflineBooking() {
                               value={team.payment_status}
                               onValueChange={(val) => handleTeamChange(idx, "payment_status", val)}
                             >
-                              <SelectTrigger className="bg-black/40 border-white/10 mt-1">
+                              <SelectTrigger className="bg-black/40 border-white/10">
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent className="bg-zinc-900 border-white/10">
@@ -452,56 +428,6 @@ export default function AdminOfflineBooking() {
                   </div>
 
                   <Separator className="bg-white/10" />
-
-                  {/* Umpire Payment */}
-                  <div className="space-y-3">
-                    <p className="font-semibold text-pink-400">Umpire Payment</p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                      <div>
-                        <Label>Umpire Name</Label>
-                        <Input
-                          placeholder="Umpire name"
-                          value={umpire.name}
-                          onChange={(e) => handleUmpireChange("name", e.target.value)}
-                          className="bg-black/40 border-white/10 mt-1"
-                        />
-                      </div>
-                      <div>
-                        <Label>Amount (₹)</Label>
-                        <Input
-                          type="number"
-                          placeholder="Amount"
-                          value={umpire.amount}
-                          onChange={(e) => handleUmpireChange("amount", e.target.value)}
-                          className="bg-black/40 border-white/10 mt-1"
-                        />
-                      </div>
-                      <div>
-                        <Label>Status</Label>
-                        <Select
-                          value={umpire.status}
-                          onValueChange={(val) => handleUmpireChange("status", val)}
-                        >
-                          <SelectTrigger className="bg-black/40 border-white/10 mt-1">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent className="bg-zinc-900 border-white/10">
-                            <SelectItem value="paid">Paid</SelectItem>
-                            <SelectItem value="pending">Pending</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label>Paid By (Team/Captain)</Label>
-                        <Input
-                          placeholder="Who paid?"
-                          value={umpire.paid_by}
-                          onChange={(e) => handleUmpireChange("paid_by", e.target.value)}
-                          className="bg-black/40 border-white/10 mt-1"
-                        />
-                      </div>
-                    </div>
-                  </div>
 
                   {/* Total Amount */}
                   <div className="pt-2">
