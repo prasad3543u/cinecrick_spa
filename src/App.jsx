@@ -17,6 +17,8 @@ import AdminOfflineBooking from "./pages/admin/AdminOfflineBooking";
 import PrivateRoute from "./components/PrivateRoute";
 import AdminRoute from "./components/AdminRoute";
 import MainLayout from "./layouts/MainLayout";
+import PartnerDashboard from "./pages/PartnerDashboard";  
+
 
 export default function App() {
   return (
@@ -137,6 +139,15 @@ export default function App() {
           </MainLayout>
         </AdminRoute>
       } />
+
+      <Route path="/partner/dashboard" element={
+        <PrivateRoute>
+          <MainLayout>
+            <PartnerDashboard />
+          </MainLayout>
+        </PrivateRoute>
+      } />
+
 
       {/* 404 Redirect */}
       <Route path="*" element={<Navigate to="/" replace />} />

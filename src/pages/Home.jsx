@@ -5,7 +5,7 @@ import {
   Zap, Compass, Lock, Trophy, ChevronDown, Search,
   LogOut, Menu, X, Calendar, Users, LayoutDashboard,
   MapPin, ClipboardList, UserCog, CalendarCheck, Settings,
-  ArrowRight, CheckCircle, CalendarPlus
+  ArrowRight, CheckCircle, CalendarPlus, Briefcase
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -301,42 +301,9 @@ export default function Home() {
         </Card>
       </section>
 
-      {/* ── HOW IT WORKS ── */}
-      <section className="w-full px-4 lg:px-14 py-8">
-        <div className="mb-6">
-          <h2 className="text-2xl font-black text-white">How It Works</h2>
-          <p className="text-white/40 text-sm mt-1">Book your ground in 3 simple steps</p>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          {[
-            { step: "01", title: "Browse Grounds", desc: "Explore available cricket grounds with photos, location, slots and pricing.", icon: <MapPin className="h-6 w-6" />, color: "emerald" },
-            { step: "02", title: "Choose a Slot", desc: "Pick a morning, evening or weekend slot that fits your schedule.", icon: <Calendar className="h-6 w-6" />, color: "cyan" },
-            { step: "03", title: "Confirm & Play", desc: "Admin confirms your booking. Umpire and groundsman are arranged for you.", icon: <CheckCircle className="h-6 w-6" />, color: "violet" },
-          ].map((item) => {
-            const colors = {
-              emerald: "border-emerald-500/20 bg-emerald-500/5 text-emerald-400",
-              cyan: "border-cyan-500/20 bg-cyan-500/5 text-cyan-400",
-              violet: "border-violet-500/20 bg-violet-500/5 text-violet-400",
-            };
-            return (
-              <div key={item.step} className={`rounded-2xl border p-5 ${colors[item.color]}`}>
-                <div className="flex items-center gap-3 mb-3">
-                  <div className={`grid h-10 w-10 place-items-center rounded-xl border ${colors[item.color]}`}>
-                    {item.icon}
-                  </div>
-                  <span className="text-3xl font-black opacity-20">{item.step}</span>
-                </div>
-                <h3 className="font-bold text-white text-base">{item.title}</h3>
-                <p className="text-xs text-white/50 mt-1 leading-relaxed">{item.desc}</p>
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* ── FEATURED GROUNDS ── */}
+      {/* ── FEATURED GROUNDS (moved before How It Works) ── */}
       {grounds.length > 0 && (
-        <section className="w-full px-4 lg:px-14 py-4">
+        <section className="w-full px-4 lg:px-14 py-8">
           <div className="flex items-center justify-between mb-6">
             <div>
               <h2 className="text-2xl font-black text-white">Featured Grounds</h2>
@@ -388,6 +355,39 @@ export default function Home() {
         </section>
       )}
 
+      {/* ── HOW IT WORKS ── */}
+      <section className="w-full px-4 lg:px-14 py-8">
+        <div className="mb-6">
+          <h2 className="text-2xl font-black text-white">How It Works</h2>
+          <p className="text-white/40 text-sm mt-1">Book your ground in 3 simple steps</p>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {[
+            { step: "01", title: "Browse Grounds", desc: "Explore available cricket grounds with photos, location, slots and pricing.", icon: <MapPin className="h-6 w-6" />, color: "emerald" },
+            { step: "02", title: "Choose a Slot", desc: "Pick a morning, evening or weekend slot that fits your schedule.", icon: <Calendar className="h-6 w-6" />, color: "cyan" },
+            { step: "03", title: "Confirm & Play", desc: "Admin confirms your booking. Umpire and groundsman are arranged for you.", icon: <CheckCircle className="h-6 w-6" />, color: "violet" },
+          ].map((item) => {
+            const colors = {
+              emerald: "border-emerald-500/20 bg-emerald-500/5 text-emerald-400",
+              cyan: "border-cyan-500/20 bg-cyan-500/5 text-cyan-400",
+              violet: "border-violet-500/20 bg-violet-500/5 text-violet-400",
+            };
+            return (
+              <div key={item.step} className={`rounded-2xl border p-5 ${colors[item.color]}`}>
+                <div className="flex items-center gap-3 mb-3">
+                  <div className={`grid h-10 w-10 place-items-center rounded-xl border ${colors[item.color]}`}>
+                    {item.icon}
+                  </div>
+                  <span className="text-3xl font-black opacity-20">{item.step}</span>
+                </div>
+                <h3 className="font-bold text-white text-base">{item.title}</h3>
+                <p className="text-xs text-white/50 mt-1 leading-relaxed">{item.desc}</p>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
       {/* ── ABOUT + WHY ── */}
       <section className="w-full px-4 lg:px-14 py-6">
         <div className="grid gap-4 lg:grid-cols-2">
@@ -427,7 +427,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── ADMIN PANEL (with Offline Booking card) ── */}
+      {/* ── ADMIN PANEL ── */}
       {user.role === "admin" && (
         <section className="w-full px-4 lg:px-14 py-6">
           <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-6">
@@ -453,9 +453,35 @@ export default function Home() {
                 desc="Manage roles" color="yellow" onClick={() => navigate("/admin/users")} />
               <AdminCard icon={<Settings className="h-6 w-6" />} label="Settings"
                 desc="Account settings" color="white" onClick={() => navigate("/settings")} />
-              {/* Offline Booking card */}
               <AdminCard icon={<CalendarPlus className="h-6 w-6" />} label="Offline Booking"
                 desc="Add manual bookings" color="emerald" onClick={() => navigate("/admin/offline-booking")} />
+            </div>
+          </div>
+        </section>
+      )}
+
+      {/* ── PARTNER PANEL ── */}
+      {user.role === "partner" && (
+        <section className="w-full px-4 lg:px-14 py-6">
+          <div className="rounded-2xl border border-violet-500/20 bg-violet-500/5 p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="grid h-10 w-10 place-items-center rounded-xl bg-violet-500/20 border border-violet-500/30">
+                <Briefcase className="h-5 w-5 text-violet-400" />
+              </div>
+              <div>
+                <h2 className="text-xl font-black text-violet-400">Partner Dashboard</h2>
+                <p className="text-xs text-white/40">Manage your grounds and payments</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <PartnerCard
+                icon={<LayoutDashboard className="h-6 w-6" />}
+                label="Dashboard"
+                desc="View stats & bookings"
+                color="violet"
+                onClick={() => navigate("/partner/dashboard")}
+              />
+              {/* Add more partner cards if needed */}
             </div>
           </div>
         </section>
@@ -492,6 +518,20 @@ function AdminCard({ icon, label, desc, color, onClick }) {
     pink:    "border-pink-500/30 bg-pink-500/10 text-pink-300 hover:bg-pink-500/20",
     yellow:  "border-yellow-500/30 bg-yellow-500/10 text-yellow-300 hover:bg-yellow-500/20",
     white:   "border-white/20 bg-white/5 text-white/70 hover:bg-white/10",
+  };
+  return (
+    <button type="button" onClick={onClick}
+      className={`flex flex-col items-center gap-2 rounded-2xl border p-4 transition text-center ${colors[color]}`}>
+      {icon}
+      <span className="text-sm font-bold leading-tight">{label}</span>
+      <span className="text-xs text-white/40 leading-tight">{desc}</span>
+    </button>
+  );
+}
+
+function PartnerCard({ icon, label, desc, color, onClick }) {
+  const colors = {
+    violet: "border-violet-500/30 bg-violet-500/10 text-violet-300 hover:bg-violet-500/20",
   };
   return (
     <button type="button" onClick={onClick}
