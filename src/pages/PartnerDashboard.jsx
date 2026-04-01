@@ -9,7 +9,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar, DollarSign, Users, Briefcase, Loader2, ArrowLeft } from "lucide-react";
+import { 
+  Calendar, DollarSign, Users, Briefcase, Loader2, ArrowLeft, 
+  MapPin, Clock, Plus, Eye, CheckCircle, XCircle, Search 
+} from "lucide-react";
 import { toast } from "sonner";
 
 export default function PartnerDashboard() {
@@ -26,10 +29,36 @@ export default function PartnerDashboard() {
   const [staffForm, setStaffForm] = useState({
     staff_type: "umpire", name: "", amount: "", status: "paid", paid_by: ""
   });
+  // New state for slot view
+  const [selectedGround, setSelectedGround] = useState("");
+  const [selectedDate, setSelectedDate] = useState("");
+  const [slots, setSlots] = useState([]);
+  const [loadingSlots, setLoadingSlots] = useState(false);
+  const [showOfflineBookingDialog, setShowOfflineBookingDialog] = useState(false);
+  const [offlineBookingForm, setOfflineBookingForm] = useState({
+    ground_id: "",
+    slot_id: "",
+    booking_date: "",
+    match_type: "with_opponents",
+    users: [
+      { name: "", phone: "", email: "", payment_amount: "", payment_status: "paid" },
+      { name: "", phone: "", email: "", payment_amount: "", payment_status: "paid" }
+    ],
+    umpire_name: "",
+    umpire_amount: "",
+    umpire_paid: "pending",
+    umpire_paid_by: ""
+  });
 
   useEffect(() => {
     loadDashboard();
   }, []);
+
+  useEffect(() => {
+    if (selectedGround && selectedDate) {
+      loadSlots();
+    }
+  }, [selectedGround, selectedDate]);
 
   async function loadDashboard() {
     try {
@@ -42,6 +71,18 @@ export default function PartnerDashboard() {
       toast.error(err?.message || "Failed to load dashboard");
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function loadSlots() {
+    setLoadingSlots(true);
+    try {
+      const data = await api(`/slots?ground_id=${selectedGround}&slot_date=${selectedDate}`);
+      setSlots(data);
+    } catch (err) {
+      toast.error("Failed to load slots");
+    } finally {
+      setLoadingSlots(false);
     }
   }
 
@@ -75,6 +116,70 @@ export default function PartnerDashboard() {
     }
   }
 
+  async function createOfflineBooking() {
+    try {
+      await api("/admin/offline_bookings", {
+        method: "POST",
+        body: offlineBookingForm
+      });
+      toast.success("Offline booking created");
+      setShowOfflineBookingDialog(false);
+      // Refresh relevant data
+      if (activeTab === "slots") loadSlots();
+      else loadDashboard();
+    } catch (err) {
+      toast.error(err?.message || "Failed to create booking");
+    }
+  }
+
+  function handleTeamChange(index, field, value) {
+    const newUsers = [...offlineBookingForm.users];
+    newUsers[index][field] = value;
+    setOfflineBookingForm({ ...offlineBookingForm, users: newUsers });
+  }
+
+  function handleOfflineFormChange(field, value) {
+    setOfflineBookingForm({ ...offlineBookingForm, [field]: value });
+  }
+
+  // Adjust number of teams based on match type
+  useEffect(() => {
+    if (offlineBookingForm.match_type === "with_opponents") {
+      setOfflineBookingForm(prev => ({
+        ...prev,
+        users: [
+          { name: "", phone: "", email: "", payment_amount: "", payment_status: "paid" },
+          { name: "", phone: "", email: "", payment_amount: "", payment_status: "paid" }
+        ]
+      }));
+    } else {
+      setOfflineBookingForm(prev => ({
+        ...prev,
+        users: [
+          { name: "", phone: "", email: "", payment_amount: "", payment_status: "paid" }
+        ]
+      }));
+    }
+  }, [offlineBookingForm.match_type]);
+
+  // When selecting ground for offline booking, auto-fill ground_id
+  const handleOfflineGroundChange = (groundId) => {
+    setOfflineBookingForm({ ...offlineBookingForm, ground_id: groundId });
+  };
+
+  // When date changes, load slots for offline booking
+  const handleOfflineDateChange = async (date) => {
+    setOfflineBookingForm({ ...offlineBookingForm, booking_date: date, slot_id: "" });
+    if (offlineBookingForm.ground_id && date) {
+      try {
+        const data = await api(`/slots?ground_id=${offlineBookingForm.ground_id}&slot_date=${date}`);
+        setOfflineBookingForm(prev => ({ ...prev, slots: data }));
+      } catch (err) {
+        toast.error("Failed to load slots");
+      }
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-[#070812] text-white flex items-center justify-center">
@@ -85,23 +190,29 @@ export default function PartnerDashboard() {
 
   return (
     <div className="min-h-screen bg-[#070812] text-white px-4 py-6">
-      <div className="mb-6 flex items-center gap-3">
-        <Button
-          onClick={() => navigate("/home")}
-          variant="ghost"
-          className="text-white/70 hover:text-white hover:bg-white/10"
-        >
-          <ArrowLeft className="h-5 w-5 mr-1" />
-          Back
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <Button
+            onClick={() => navigate("/home")}
+            variant="ghost"
+            className="text-white/70 hover:text-white hover:bg-white/10"
+          >
+            <ArrowLeft className="h-5 w-5 mr-1" />
+            Back
+          </Button>
+          <h1 className="text-3xl font-bold text-pink-400">Partner Dashboard</h1>
+        </div>
+        <Button onClick={() => setShowOfflineBookingDialog(true)} className="bg-emerald-500">
+          <Plus className="h-4 w-4 mr-1" />
+          Offline Booking
         </Button>
-        <h1 className="text-3xl font-bold text-pink-400">Partner Dashboard</h1>
       </div>
 
       {/* Stats Cards */}
       {stats && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <StatCard title="Total Bookings" value={stats.total_bookings} icon={<Calendar className="h-5 w-5" />} color="blue" />
-          <StatCard title="Confirmed" value={stats.confirmed_bookings} icon={<Users className="h-5 w-5" />} color="green" />
+          <StatCard title="Confirmed" value={stats.confirmed_bookings} icon={<CheckCircle className="h-5 w-5" />} color="green" />
           <StatCard title="Total Revenue" value={`₹${stats.total_revenue?.toLocaleString() || 0}`} icon={<DollarSign className="h-5 w-5" />} color="emerald" />
           <StatCard title="Pending Payments" value={`₹${stats.pending_payments?.toLocaleString() || 0}`} icon={<Briefcase className="h-5 w-5" />} color="yellow" />
         </div>
@@ -110,6 +221,7 @@ export default function PartnerDashboard() {
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="bg-zinc-900 border border-white/10">
           <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="slots">Slots</TabsTrigger>
           <TabsTrigger value="bookings">Bookings</TabsTrigger>
           <TabsTrigger value="payments">Payments</TabsTrigger>
           <TabsTrigger value="staff">Staff Payments</TabsTrigger>
@@ -130,6 +242,96 @@ export default function PartnerDashboard() {
           </div>
         </TabsContent>
 
+        <TabsContent value="slots" className="mt-4">
+          <div className="mb-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <Label>Ground</Label>
+              <Select value={selectedGround} onValueChange={setSelectedGround}>
+                <SelectTrigger className="bg-black/40 border-white/10 mt-1">
+                  <SelectValue placeholder="Select ground" />
+                </SelectTrigger>
+                <SelectContent className="bg-zinc-900 border-white/10">
+                  {grounds.map(g => (
+                    <SelectItem key={g.id} value={g.id.toString()}>{g.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Date</Label>
+              <Input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="bg-black/40 border-white/10 mt-1"
+              />
+            </div>
+            <Button onClick={loadSlots} className="mt-6 bg-blue-500/20 text-blue-300">
+              <Search className="h-4 w-4 mr-1" /> Load Slots
+            </Button>
+          </div>
+
+          {loadingSlots ? (
+            <div className="flex justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-pink-500" />
+            </div>
+          ) : slots.length === 0 ? (
+            <div className="text-center py-8 text-white/50">No slots found for this date.</div>
+          ) : (
+            <div className="space-y-6">
+              {slots.map(slot => (
+                <Card key={slot.id} className="border-white/10 bg-zinc-950/55">
+                  <CardContent className="p-4">
+                    <div className="flex justify-between items-center mb-3">
+                      <h3 className="text-lg font-bold">{slot.start_time} – {slot.end_time}</h3>
+                      <Badge className={slot.status === "available" ? "bg-green-500/20 text-green-400" : "bg-red-500/20 text-red-400"}>
+                        {slot.status}
+                      </Badge>
+                    </div>
+                    <p className="text-pink-400 font-semibold">₹{slot.price} per team</p>
+                    <p className="text-white/50 text-sm">Teams: {slot.teams_booked_count || 0} / {slot.max_teams || 2}</p>
+                    {slot.bookings && slot.bookings.length > 0 && (
+                      <div className="mt-3 space-y-2">
+                        <p className="font-semibold">Bookings:</p>
+                        {slot.bookings.map((booking, idx) => (
+                          <div key={booking.id} className="border-t border-white/10 pt-2">
+                            <p className="text-sm"><span className="text-pink-400">Team {idx+1}:</span> {booking.user?.name} ({booking.user?.phone})</p>
+                            <div className="flex gap-2 mt-1">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  setSelectedBooking(booking);
+                                  setPaymentForm({ amount: booking.total_price, status: booking.payment_status, notes: "" });
+                                  setShowPaymentDialog(true);
+                                }}
+                                className="border-blue-500/30 text-blue-300"
+                              >
+                                Payment
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  setSelectedBooking(booking);
+                                  setShowStaffDialog(true);
+                                }}
+                                className="border-violet-500/30 text-violet-300"
+                              >
+                                Staff
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
         <TabsContent value="bookings" className="mt-4">
           <div className="space-y-3">
             {bookings.map(booking => (
@@ -138,7 +340,7 @@ export default function PartnerDashboard() {
                 booking={booking}
                 onUpdatePayment={() => {
                   setSelectedBooking(booking);
-                  setPaymentForm({ amount: booking.total_price, status: "paid", notes: "" });
+                  setPaymentForm({ amount: booking.total_price, status: booking.payment_status, notes: "" });
                   setShowPaymentDialog(true);
                 }}
                 onUpdateStaff={() => {
@@ -170,13 +372,6 @@ export default function PartnerDashboard() {
                 booking={booking}
                 onUpdate={() => {
                   setSelectedBooking(booking);
-                  setStaffForm({
-                    staff_type: "umpire",
-                    name: "",
-                    amount: "",
-                    status: "pending",
-                    paid_by: ""
-                  });
                   setShowStaffDialog(true);
                 }}
               />
@@ -185,7 +380,7 @@ export default function PartnerDashboard() {
         </TabsContent>
       </Tabs>
 
-      {/* Payment Dialog */}
+      {/* Dialogs */}
       <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
         <DialogContent className="bg-zinc-950 border-white/10 text-white">
           <DialogHeader>
@@ -229,7 +424,6 @@ export default function PartnerDashboard() {
         </DialogContent>
       </Dialog>
 
-      {/* Staff Payment Dialog */}
       <Dialog open={showStaffDialog} onOpenChange={setShowStaffDialog}>
         <DialogContent className="bg-zinc-950 border-white/10 text-white">
           <DialogHeader>
@@ -292,11 +486,174 @@ export default function PartnerDashboard() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Offline Booking Dialog */}
+      <Dialog open={showOfflineBookingDialog} onOpenChange={setShowOfflineBookingDialog}>
+        <DialogContent className="bg-zinc-950 border-white/10 text-white max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Offline Booking</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Ground</Label>
+              <Select value={offlineBookingForm.ground_id} onValueChange={handleOfflineGroundChange}>
+                <SelectTrigger className="bg-black/40 border-white/10">
+                  <SelectValue placeholder="Select ground" />
+                </SelectTrigger>
+                <SelectContent className="bg-zinc-900 border-white/10">
+                  {grounds.map(g => (
+                    <SelectItem key={g.id} value={g.id.toString()}>{g.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Date</Label>
+              <Input
+                type="date"
+                value={offlineBookingForm.booking_date}
+                onChange={(e) => handleOfflineDateChange(e.target.value)}
+                className="bg-black/40 border-white/10"
+              />
+            </div>
+            {offlineBookingForm.slots && offlineBookingForm.slots.length > 0 && (
+              <div>
+                <Label>Slot</Label>
+                <Select value={offlineBookingForm.slot_id} onValueChange={(val) => handleOfflineFormChange("slot_id", val)}>
+                  <SelectTrigger className="bg-black/40 border-white/10">
+                    <SelectValue placeholder="Select slot" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-zinc-900 border-white/10">
+                    {offlineBookingForm.slots.map(slot => (
+                      <SelectItem key={slot.id} value={slot.id.toString()}>
+                        {slot.start_time} - {slot.end_time} (₹{slot.price})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            <div>
+              <Label>Match Type</Label>
+              <div className="flex gap-4 mt-1">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    value="with_opponents"
+                    checked={offlineBookingForm.match_type === "with_opponents"}
+                    onChange={() => handleOfflineFormChange("match_type", "with_opponents")}
+                  />
+                  With Opponents (2 teams)
+                </label>
+                <label className="flex items-center gap-2">
+                  <input
+                    type="radio"
+                    value="without_opponents"
+                    checked={offlineBookingForm.match_type === "without_opponents"}
+                    onChange={() => handleOfflineFormChange("match_type", "without_opponents")}
+                  />
+                  Without Opponents (1 team)
+                </label>
+              </div>
+            </div>
+            {offlineBookingForm.slot_id && (
+              <div className="space-y-4">
+                {offlineBookingForm.users.map((team, idx) => (
+                  <div key={idx} className="border border-white/10 rounded-lg p-4 space-y-2">
+                    <p className="font-semibold text-pink-400">Team {idx + 1}</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Input
+                        placeholder="Name"
+                        value={team.name}
+                        onChange={(e) => handleTeamChange(idx, "name", e.target.value)}
+                        className="bg-black/40 border-white/10"
+                      />
+                      <Input
+                        placeholder="Phone"
+                        value={team.phone}
+                        onChange={(e) => handleTeamChange(idx, "phone", e.target.value)}
+                        className="bg-black/40 border-white/10"
+                      />
+                      <Input
+                        placeholder="Email / WhatsApp"
+                        value={team.email}
+                        onChange={(e) => handleTeamChange(idx, "email", e.target.value)}
+                        className="bg-black/40 border-white/10"
+                      />
+                      <Input
+                        type="number"
+                        placeholder="Payment Amount"
+                        value={team.payment_amount}
+                        onChange={(e) => handleTeamChange(idx, "payment_amount", e.target.value)}
+                        className="bg-black/40 border-white/10"
+                      />
+                      <Select
+                        value={team.payment_status}
+                        onValueChange={(val) => handleTeamChange(idx, "payment_status", val)}
+                      >
+                        <SelectTrigger className="bg-black/40 border-white/10">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="bg-zinc-900 border-white/10">
+                          <SelectItem value="paid">Paid</SelectItem>
+                          <SelectItem value="pending">Pending</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                ))}
+                <div className="border border-white/10 rounded-lg p-4 space-y-2">
+                  <p className="font-semibold text-pink-400">Umpire Payment</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Input
+                      placeholder="Umpire Name"
+                      value={offlineBookingForm.umpire_name}
+                      onChange={(e) => handleOfflineFormChange("umpire_name", e.target.value)}
+                      className="bg-black/40 border-white/10"
+                    />
+                    <Input
+                      type="number"
+                      placeholder="Amount"
+                      value={offlineBookingForm.umpire_amount}
+                      onChange={(e) => handleOfflineFormChange("umpire_amount", e.target.value)}
+                      className="bg-black/40 border-white/10"
+                    />
+                    <Select
+                      value={offlineBookingForm.umpire_paid}
+                      onValueChange={(val) => handleOfflineFormChange("umpire_paid", val)}
+                    >
+                      <SelectTrigger className="bg-black/40 border-white/10">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-zinc-900 border-white/10">
+                        <SelectItem value="paid">Paid</SelectItem>
+                        <SelectItem value="pending">Pending</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Input
+                      placeholder="Paid By (Team/Captain)"
+                      value={offlineBookingForm.umpire_paid_by}
+                      onChange={(e) => handleOfflineFormChange("umpire_paid_by", e.target.value)}
+                      className="bg-black/40 border-white/10"
+                    />
+                  </div>
+                </div>
+                <Button
+                  onClick={createOfflineBooking}
+                  className="w-full bg-emerald-500"
+                >
+                  Create Booking
+                </Button>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
 
-// Stat Card Component
+// Helper Components (same as before)
 function StatCard({ title, value, icon, color }) {
   const colors = {
     blue: "bg-blue-500/20 text-blue-400",
@@ -325,7 +682,7 @@ function BookingCard({ booking, onUpdatePayment, onUpdateStaff }) {
   return (
     <Card className="border-white/10 bg-zinc-950/55">
       <CardContent className="p-4">
-        <div className="flex justify-between items-start">
+        <div className="flex flex-wrap justify-between items-start gap-2">
           <div>
             <h3 className="font-bold text-pink-400">{booking.ground?.name}</h3>
             <p className="text-white/50 text-sm">{booking.booking_date} • {booking.slot?.start_time} - {booking.slot?.end_time}</p>
@@ -346,7 +703,7 @@ function BookingCard({ booking, onUpdatePayment, onUpdateStaff }) {
             Payment
           </Button>
           <Button size="sm" onClick={onUpdateStaff} className="bg-violet-500/20 text-violet-300">
-            Staff Payment
+            Staff
           </Button>
         </div>
       </CardContent>
