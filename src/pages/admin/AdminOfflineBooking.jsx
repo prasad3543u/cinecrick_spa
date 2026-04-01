@@ -7,10 +7,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { 
   MapPin, Clock, Shield, User, Phone, Loader2, 
-  CheckCircle, DollarSign
+  CheckCircle, Users
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -23,8 +22,8 @@ export default function AdminOfflineBooking() {
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [matchType, setMatchType] = useState("with_opponents");
   const [teams, setTeams] = useState([
-    { name: "", phone: "", email: "", payment_amount: "", payment_status: "paid" },
-    { name: "", phone: "", email: "", payment_amount: "", payment_status: "paid" }
+    { name: "", phone: "", email: "" },
+    { name: "", phone: "", email: "" }
   ]);
   const [loading, setLoading] = useState(false);
   const [loadingSlots, setLoadingSlots] = useState(false);
@@ -40,15 +39,16 @@ export default function AdminOfflineBooking() {
     }
   }, [selectedGround, selectedDate]);
 
+  // Adjust number of teams based on match type
   useEffect(() => {
     if (matchType === "with_opponents") {
       setTeams([
-        { name: "", phone: "", email: "", payment_amount: "", payment_status: "paid" },
-        { name: "", phone: "", email: "", payment_amount: "", payment_status: "paid" }
+        { name: "", phone: "", email: "" },
+        { name: "", phone: "", email: "" }
       ]);
     } else {
       setTeams([
-        { name: "", phone: "", email: "", payment_amount: "", payment_status: "paid" }
+        { name: "", phone: "", email: "" }
       ]);
     }
   }, [matchType]);
@@ -102,7 +102,7 @@ export default function AdminOfflineBooking() {
       toast.error("Please select a time slot");
       return;
     }
-    if (teams.some(t => !t.name || !t.phone || !t.email || !t.payment_amount)) {
+    if (teams.some(t => !t.name || !t.phone || !t.email)) {
       toast.error("Please fill all team details");
       return;
     }
@@ -117,29 +117,24 @@ export default function AdminOfflineBooking() {
           booking_date: selectedDate,
           match_type: matchType,
           users: teams
-          // No umpire payment here
         }
       });
       toast.success("Offline booking(s) created successfully");
-      // Reset everything except grounds list
+      // Reset form
       setSelectedGround(null);
       setSelectedDate("");
       setSlots([]);
       setSelectedSlot(null);
       setMatchType("with_opponents");
       setTeams([
-        { name: "", phone: "", email: "", payment_amount: "", payment_status: "paid" },
-        { name: "", phone: "", email: "", payment_amount: "", payment_status: "paid" }
+        { name: "", phone: "", email: "" },
+        { name: "", phone: "", email: "" }
       ]);
     } catch (err) {
       toast.error(err?.message || "Failed to create booking");
     } finally {
       setLoading(false);
     }
-  }
-
-  function calculateTotalPrice() {
-    return teams.reduce((sum, t) => sum + (parseFloat(t.payment_amount) || 0), 0);
   }
 
   if (!selectedGround && grounds.length === 0) {
@@ -170,12 +165,12 @@ export default function AdminOfflineBooking() {
             setSelectedGround(ground);
           }}
         >
-          <SelectTrigger className="bg-black/40 border-white/10 text-white [&>span]:text-white">
+          <SelectTrigger className="bg-zinc-800 border-white/20 text-white">
             <SelectValue placeholder="Choose a ground" />
           </SelectTrigger>
-          <SelectContent className="bg-zinc-900 border-white/10 text-white">
+          <SelectContent className="bg-zinc-800 border-white/20 text-white">
             {grounds.map(g => (
-              <SelectItem key={g.id} value={g.id.toString()} className="text-white focus:bg-white/10 focus:text-white">
+              <SelectItem key={g.id} value={g.id.toString()} className="text-white hover:bg-zinc-700">
                 {g.name}
               </SelectItem>
             ))}
@@ -222,10 +217,6 @@ export default function AdminOfflineBooking() {
                 <div className="flex items-center gap-2">
                   <Phone className="h-4 w-4 text-yellow-400" />
                   <span>{selectedGround.admin_phone || "Not set"}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <DollarSign className="h-4 w-4 text-pink-400" />
-                  <span>₹{selectedGround.price_per_hour}/hour</span>
                 </div>
               </div>
             </CardContent>
@@ -397,44 +388,9 @@ export default function AdminOfflineBooking() {
                               className="bg-black/40 border-white/10 mt-1"
                             />
                           </div>
-                          <div>
-                            <Label>Amount Paid (₹)</Label>
-                            <Input
-                              type="number"
-                              placeholder="Amount"
-                              value={team.payment_amount}
-                              onChange={(e) => handleTeamChange(idx, "payment_amount", e.target.value)}
-                              className="bg-black/40 border-white/10 mt-1"
-                            />
-                          </div>
-                          <div>
-                            <Label>Payment Status</Label>
-                            <Select
-                              value={team.payment_status}
-                              onValueChange={(val) => handleTeamChange(idx, "payment_status", val)}
-                            >
-                              <SelectTrigger className="bg-black/40 border-white/10">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent className="bg-zinc-900 border-white/10">
-                                <SelectItem value="paid">Paid</SelectItem>
-                                <SelectItem value="pending">Pending</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </div>
                         </div>
                       </div>
                     ))}
-                  </div>
-
-                  <Separator className="bg-white/10" />
-
-                  {/* Total Amount */}
-                  <div className="pt-2">
-                    <div className="flex justify-between text-lg font-bold">
-                      <span>Total Amount Collected</span>
-                      <span className="text-pink-400">₹{calculateTotalPrice()}</span>
-                    </div>
                   </div>
 
                   <Button
