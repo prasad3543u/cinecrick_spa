@@ -23,6 +23,7 @@ import {
   Command, CommandEmpty, CommandGroup, CommandInput,
   CommandItem, CommandList,
 } from "@/components/ui/command";
+import AIChatbot from "../components/AIChatbot";
 
 export default function Home() {
   const navigate = useNavigate();
@@ -301,7 +302,7 @@ export default function Home() {
         </Card>
       </section>
 
-      {/* ── FEATURED GROUNDS (moved before How It Works) ── */}
+      {/* ── FEATURED GROUNDS ── */}
       {grounds.length > 0 && (
         <section className="w-full px-4 lg:px-14 py-8">
           <div className="flex items-center justify-between mb-6">
@@ -481,11 +482,13 @@ export default function Home() {
                 color="violet"
                 onClick={() => navigate("/partner/dashboard")}
               />
-              {/* Add more partner cards if needed */}
             </div>
           </div>
         </section>
       )}
+
+      {/* ── AI CHATBOT ── */}
+      <AIChatbot />
 
       {/* ── FOOTER ── */}
       <footer className="mt-14 border-t border-emerald-500/20 bg-gradient-to-b from-black to-[#070812] shadow-[0_-20px_80px_rgba(16,185,129,0.15)]">
