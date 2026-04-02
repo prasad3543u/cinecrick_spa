@@ -67,12 +67,18 @@ export default function PartnerDashboard() {
   }
 
   async function loadSlots() {
+    if (!selectedGround || !selectedDate) {
+      toast.error("Please select a ground and date");
+      return;
+    }
     setLoading(true);
     try {
       const data = await api(`/partners/slots?ground_id=${selectedGround.id}&date=${selectedDate}`);
       setSlots(data);
     } catch (err) {
-      toast.error("Failed to load slots");
+      console.error("Slots error:", err);
+      toast.error(err?.message || "Failed to load slots");
+      setSlots([]);
     } finally {
       setLoading(false);
     }
@@ -199,7 +205,7 @@ export default function PartnerDashboard() {
       {/* Ground & Date Selection */}
       <div className="mb-6 flex flex-wrap gap-4 items-end">
         <div className="w-64">
-          <Label>Ground</Label>
+          <Label className="text-white/80">Ground</Label>
           <Select
             value={selectedGround.id.toString()}
             onValueChange={(val) => {
@@ -207,23 +213,25 @@ export default function PartnerDashboard() {
               setSelectedGround(ground);
             }}
           >
-            <SelectTrigger className="bg-black/40 border-white/10 mt-1">
+            <SelectTrigger className="bg-zinc-800 border-white/20 text-white">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent className="bg-zinc-900 border-white/10">
+            <SelectContent className="bg-zinc-800 border-white/20 text-white">
               {grounds.map(g => (
-                <SelectItem key={g.id} value={g.id.toString()}>{g.name}</SelectItem>
+                <SelectItem key={g.id} value={g.id.toString()} className="text-white hover:bg-zinc-700">
+                  {g.name}
+                </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
         <div>
-          <Label>Date</Label>
+          <Label className="text-white/80">Date</Label>
           <Input
             type="date"
             value={selectedDate}
             onChange={(e) => setSelectedDate(e.target.value)}
-            className="bg-black/40 border-white/10 mt-1 w-48"
+            className="bg-zinc-800 border-white/20 text-white mt-1 w-48"
           />
         </div>
         <div>
@@ -369,7 +377,7 @@ export default function PartnerDashboard() {
         </div>
       )}
 
-      {/* Dialogs (same as before, but updated for offline) */}
+      {/* Dialogs (same as before) */}
       <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
         <DialogContent className="bg-zinc-950 border-white/10 text-white">
           <DialogHeader><DialogTitle>Update Payment</DialogTitle></DialogHeader>
@@ -519,6 +527,7 @@ export default function PartnerDashboard() {
                       <SelectContent>
                         <SelectItem value="paid">Paid</SelectItem>
                         <SelectItem value="pending">Pending</SelectItem>
+                        <SelectItem value="partial">Partial</SelectItem>
                       </SelectContent>
                     </Select>
                     <Input placeholder="Paid By (Team/Captain)" value={offlineForm.umpire_paid_by} onChange={(e) => handleOfflineChange("umpire_paid_by", e.target.value)} />
