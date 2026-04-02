@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from "react";
 import { api } from "../lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
 import { Loader2, MessageCircle, X, Send, Bot, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
@@ -34,7 +33,7 @@ export default function AIChatbot() {
         method: "POST",
         body: { message: input }
       });
-      
+
       const botMessage = { role: "bot", content: response.response };
       setMessages(prev => [...prev, botMessage]);
     } catch (err) {
@@ -66,7 +65,7 @@ export default function AIChatbot() {
           </div>
           <div>
             <h3 className="font-semibold">CrickOps AI Assistant</h3>
-            <p className="text-xs text-white/50">Powered by Gemini</p>
+            <p className="text-xs text-white/50">Powered by CrickOps Data</p>
           </div>
         </div>
         <button
@@ -87,13 +86,28 @@ export default function AIChatbot() {
               Ask me about grounds, bookings, or anything cricket!
             </p>
             <div className="mt-4 space-y-2">
-              <SuggestionChip text="Recommend a ground near Bangalore" onClick={() => setInput("Recommend a ground near Bangalore")} />
-              <SuggestionChip text="What's your cancellation policy?" onClick={() => setInput("What's your cancellation policy?")} />
-              <SuggestionChip text="How do I book a slot?" onClick={() => setInput("How do I book a slot?")} />
+              <button
+                onClick={() => setInput("Recommend a ground near Bangalore")}
+                className="block w-full text-left px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-sm text-white/70 transition"
+              >
+                Recommend a ground near Bangalore
+              </button>
+              <button
+                onClick={() => setInput("What's your cancellation policy?")}
+                className="block w-full text-left px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-sm text-white/70 transition"
+              >
+                What's your cancellation policy?
+              </button>
+              <button
+                onClick={() => setInput("How do I book a slot?")}
+                className="block w-full text-left px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-sm text-white/70 transition"
+              >
+                How do I book a slot?
+              </button>
             </div>
           </div>
         )}
-        
+
         {messages.map((msg, idx) => (
           <div
             key={idx}
@@ -110,7 +124,7 @@ export default function AIChatbot() {
             </div>
           </div>
         ))}
-        
+
         {loading && (
           <div className="flex justify-start">
             <div className="bg-white/10 p-3 rounded-2xl">
@@ -118,7 +132,7 @@ export default function AIChatbot() {
             </div>
           </div>
         )}
-        
+
         <div ref={messagesEndRef} />
       </div>
 
@@ -142,16 +156,5 @@ export default function AIChatbot() {
         </div>
       </div>
     </div>
-  );
-}
-
-function SuggestionChip({ text, onClick }) {
-  return (
-    <button
-      onClick={onClick}
-      className="block w-full text-left px-3 py-2 rounded-xl bg-white/5 hover:bg-white/10 text-sm text-white/70 transition"
-    >
-      {text}
-    </button>
   );
 }
